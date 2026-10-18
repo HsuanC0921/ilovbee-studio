@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T00:00:00+08:00",
+  "title": "Design System: iLovbee Studio",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#20242B" },
+      "muted": { "role": "neutral", "displayName": "Slate Muted", "canonical": "#55606D" },
+      "primary": { "role": "primary", "displayName": "Workbench Blue", "canonical": "#185ABD" },
+      "surface": { "role": "neutral", "displayName": "Porcelain Surface", "canonical": "#F7F8FA" },
+      "border": { "role": "neutral", "displayName": "Divider Gray", "canonical": "#D5DBE3" },
+      "keyboard-bed": { "role": "neutral", "displayName": "Keyboard Bed", "canonical": "#E3E7ED" },
+      "pending": { "role": "secondary", "displayName": "Pending Blue Wash", "canonical": "#DCEAFF" },
+      "knob": { "role": "neutral", "displayName": "Knob Graphite", "canonical": "#465365" },
+      "white": { "role": "neutral", "displayName": "White", "canonical": "#FFFFFF" }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Windows system UI", "purpose": "Default body and interface text." },
+      "page-title": { "displayName": "Page title", "purpose": "Screen headings." },
+      "compact-label": { "displayName": "Compact label", "purpose": "Supporting and control labels." },
+      "key-legend": { "displayName": "Key legend", "purpose": "Physical key captions." },
+      "test-log": { "displayName": "Cascadia Mono", "purpose": "Keyboard test event text." }
+    },
+    "breakpoints": [
+      { "name": "navigation-compact", "value": "720px" },
+      { "name": "navigation-expanded", "value": "1100px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Apply the reviewed keyboard changes.",
+      "html": "<button class=\"ds-button-primary\">套用變更</button>",
+      "css": ".ds-button-primary { background: #185ABD; color: #FFFFFF; padding: 9px 16px; font: 600 14px 'Segoe UI', sans-serif; border: 1px solid #185ABD; border-radius: 4px; } .ds-button-primary:hover { background: #124A9F; border-color: #124A9F; } .ds-button-primary:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; } .ds-button-primary:active { background: #0F3E87; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "",
+      "description": "Search available key actions by name.",
+      "html": "<input class=\"ds-input-search\" type=\"search\" placeholder=\"搜尋功能，例如 F13、截圖、靜音\" aria-label=\"搜尋按鍵功能\">",
+      "css": ".ds-input-search { background: #FFFFFF; color: #20242B; padding: 9px 12px; font: 14px 'Segoe UI', sans-serif; border: 1px solid #D5DBE3; border-radius: 4px; } .ds-input-search:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; border-color: #185ABD; } .ds-input-search::placeholder { color: #55606D; }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Choose one of the five keyboard workbench pages.",
+      "html": "<nav class=\"ds-navigation\" aria-label=\"主要導覽\"><button class=\"ds-nav-item ds-nav-item-selected\">按鍵重設</button><button class=\"ds-nav-item\">燈效</button></nav>",
+      "css": ".ds-navigation { background: #F7F8FA; color: #20242B; padding: 8px; font: 14px 'Segoe UI', sans-serif; } .ds-nav-item { display: block; width: 100%; text-align: left; background: transparent; color: #20242B; padding: 10px 12px; border: 0; border-radius: 4px; font: inherit; } .ds-nav-item:hover { background: #E3E7ED; } .ds-nav-item-selected { background: #DCEAFF; color: #185ABD; } .ds-nav-item:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; }"
+    },
+    {
+      "name": "Selected Keyboard Key",
+      "kind": "custom",
+      "refersTo": "keyboard-key-selected",
+      "description": "Marks the physical key currently selected for editing.",
+      "html": "<button class=\"ds-key ds-key-selected\" aria-pressed=\"true\">小算盤鍵</button>",
+      "css": ".ds-key { background: #FFFFFF; color: #20242B; padding: 6px 8px; border: 1px solid #D5DBE3; border-radius: 5px; font: 12px 'Segoe UI', sans-serif; } .ds-key:hover { border-color: #185ABD; } .ds-key-selected { background: #185ABD; color: #FFFFFF; border-color: #185ABD; } .ds-key:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Pending Keyboard Key",
+      "kind": "custom",
+      "refersTo": "keyboard-key-pending",
+      "description": "Shows a physical key with a staged mapping change.",
+      "html": "<button class=\"ds-key ds-key-pending\">F13</button>",
+      "css": ".ds-key-pending { background: #DCEAFF; color: #20242B; padding: 6px 8px; border: 2px solid #185ABD; border-radius: 5px; font: 12px 'Segoe UI', sans-serif; } .ds-key-pending:hover { background: #C9DDFA; } .ds-key-pending:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Assignment Strip",
+      "kind": "custom",
+      "refersTo": "assignment-strip",
+      "description": "Pairs the current mapping with the proposed action and editing controls.",
+      "html": "<section class=\"ds-assignment\"><div><span>目前指派</span><strong>計算機</strong></div><div><span>搜尋按鍵功能</span><input aria-label=\"搜尋按鍵功能\"></div></section>",
+      "css": ".ds-assignment { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 24px; background: #FFFFFF; color: #20242B; padding: 16px; border: 1px solid #D5DBE3; border-radius: 8px; font: 14px 'Segoe UI', sans-serif; } .ds-assignment span { display: block; color: #55606D; font-size: 12px; margin-bottom: 8px; } .ds-assignment strong { font-size: 16px; font-weight: 400; } .ds-assignment input { width: 100%; padding: 9px 12px; border: 1px solid #D5DBE3; border-radius: 4px; font: inherit; } .ds-assignment input:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Precise Keyboard Workbench",
+    "overview": "This Windows-native interface treats the physical keyboard as the work surface. A quiet porcelain canvas and graphite text keep attention on the key map; restrained blue marks selection and the next committed action. Traditional Chinese labels are direct and compact, with status and controls carrying the workflow instead of promotional copy.\n\nFluent controls retain their familiar keyboard focus and interaction states. The integrated title bar keeps native caption controls, while the large keyboard, current-versus-proposed assignment strip, and staged changes make editing legible at a glance.",
+    "keyCharacteristics": [
+      "Professional Traditional Chinese desktop UI",
+      "Native WinUI 3 controls and Fluent focus affordances",
+      "Blue means selected; pale blue means pending",
+      "Large physical keyboard map with an explicit knob test affordance"
+    ],
+    "rules": [
+      { "name": "The State Color Rule", "body": "Blue identifies the selected key; pale blue identifies a pending mapping. Keep those meanings distinct.", "section": "colors" }
+    ],
+    "dos": [
+      "Do retain native WinUI controls and their Fluent focus behavior.",
+      "Do distinguish the selected key from staged edits using the established blue and pale blue states.",
+      "Do keep current assignment and proposed action visibly adjacent in the assignment strip."
+    ],
+    "donts": [
+      "Don't assign a key meaning to the knob from its physical position; it opens key testing.",
+      "Don't replace the neutral workbench with decorative dashboard cards or marketing copy."
+    ]
+  }
+}

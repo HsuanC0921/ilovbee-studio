@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+dist/
+*.user
+*.suo
+.vs/
+local-data/
+device-backups/
+diagnostics/
+*.pdb
+last-error.txt

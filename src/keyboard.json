@@ -1,0 +1,803 @@
+[
+  {
+    "Id": 1,
+    "Name": "Esc",
+    "X": 21,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 0
+  },
+  {
+    "Id": 2,
+    "Name": "F1",
+    "X": 73,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 6
+  },
+  {
+    "Id": 3,
+    "Name": "F2",
+    "X": 114,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 12
+  },
+  {
+    "Id": 4,
+    "Name": "F3",
+    "X": 156,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 18
+  },
+  {
+    "Id": 5,
+    "Name": "F4",
+    "X": 198,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 24
+  },
+  {
+    "Id": 6,
+    "Name": "F5",
+    "X": 250,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 30
+  },
+  {
+    "Id": 7,
+    "Name": "F6",
+    "X": 292,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 36
+  },
+  {
+    "Id": 8,
+    "Name": "F7",
+    "X": 334,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 42
+  },
+  {
+    "Id": 9,
+    "Name": "F8",
+    "X": 375,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 48
+  },
+  {
+    "Id": 10,
+    "Name": "F9",
+    "X": 427,
+    "Y": 39,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 54
+  },
+  {
+    "Id": 11,
+    "Name": "F10",
+    "X": 468,
+    "Y": 39,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 60
+  },
+  {
+    "Id": 12,
+    "Name": "F11",
+    "X": 511,
+    "Y": 39,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 66
+  },
+  {
+    "Id": 13,
+    "Name": "F12",
+    "X": 552,
+    "Y": 39,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 72
+  },
+  {
+    "Id": 14,
+    "Name": "PrtSc",
+    "X": 657,
+    "Y": 39,
+    "Width": 27,
+    "Height": 30,
+    "Slot": 84
+  },
+  {
+    "Id": 15,
+    "Name": "SrcLock",
+    "X": 699,
+    "Y": 39,
+    "Width": 27,
+    "Height": 30,
+    "Slot": 90
+  },
+  {
+    "Id": 16,
+    "Name": "Pause",
+    "X": 740,
+    "Y": 39,
+    "Width": 27,
+    "Height": 30,
+    "Slot": 96
+  },
+  {
+    "Id": 17,
+    "Name": "`",
+    "X": 22,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 1
+  },
+  {
+    "Id": 18,
+    "Name": "1",
+    "X": 64,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 7
+  },
+  {
+    "Id": 19,
+    "Name": "2",
+    "X": 105,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 13
+  },
+  {
+    "Id": 20,
+    "Name": "3",
+    "X": 146,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 19
+  },
+  {
+    "Id": 21,
+    "Name": "4",
+    "X": 187,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 25
+  },
+  {
+    "Id": 22,
+    "Name": "5",
+    "X": 229,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 31
+  },
+  {
+    "Id": 23,
+    "Name": "6",
+    "X": 270,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 37
+  },
+  {
+    "Id": 24,
+    "Name": "7",
+    "X": 312,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 43
+  },
+  {
+    "Id": 25,
+    "Name": "8",
+    "X": 352,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 49
+  },
+  {
+    "Id": 26,
+    "Name": "9",
+    "X": 395,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 55
+  },
+  {
+    "Id": 27,
+    "Name": "0",
+    "X": 435,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 61
+  },
+  {
+    "Id": 28,
+    "Name": "-",
+    "X": 479,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 67
+  },
+  {
+    "Id": 29,
+    "Name": "=",
+    "X": 520,
+    "Y": 91,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 73
+  },
+  {
+    "Id": 30,
+    "Name": "Backspace",
+    "X": 562,
+    "Y": 90,
+    "Width": 66,
+    "Height": 30,
+    "Slot": 79
+  },
+  {
+    "Id": 31,
+    "Name": "Insert",
+    "X": 657,
+    "Y": 90,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 85
+  },
+  {
+    "Id": 32,
+    "Name": "Home",
+    "X": 698,
+    "Y": 90,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 91
+  },
+  {
+    "Id": 33,
+    "Name": "PgUp",
+    "X": 740,
+    "Y": 90,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 97
+  },
+  {
+    "Id": 34,
+    "Name": "Tab",
+    "X": 24,
+    "Y": 132,
+    "Width": 47,
+    "Height": 30,
+    "Slot": 2
+  },
+  {
+    "Id": 35,
+    "Name": "Q",
+    "X": 86,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 8
+  },
+  {
+    "Id": 36,
+    "Name": "W",
+    "X": 126,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 14
+  },
+  {
+    "Id": 37,
+    "Name": "E",
+    "X": 167,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 20
+  },
+  {
+    "Id": 38,
+    "Name": "R",
+    "X": 209,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 26
+  },
+  {
+    "Id": 39,
+    "Name": "T",
+    "X": 250,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 32
+  },
+  {
+    "Id": 40,
+    "Name": "Y",
+    "X": 291,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 38
+  },
+  {
+    "Id": 41,
+    "Name": "U",
+    "X": 332,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 44
+  },
+  {
+    "Id": 42,
+    "Name": "I",
+    "X": 373,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 50
+  },
+  {
+    "Id": 43,
+    "Name": "O",
+    "X": 415,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 56
+  },
+  {
+    "Id": 44,
+    "Name": "P",
+    "X": 457,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 62
+  },
+  {
+    "Id": 45,
+    "Name": "[",
+    "X": 500,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 68
+  },
+  {
+    "Id": 46,
+    "Name": "]",
+    "X": 541,
+    "Y": 132,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 74
+  },
+  {
+    "Id": 47,
+    "Name": "\\",
+    "X": 582,
+    "Y": 131,
+    "Width": 47,
+    "Height": 30,
+    "Slot": 80
+  },
+  {
+    "Id": 48,
+    "Name": "Delete",
+    "X": 655,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 86
+  },
+  {
+    "Id": 49,
+    "Name": "End",
+    "X": 696,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 92
+  },
+  {
+    "Id": 50,
+    "Name": "PgDn",
+    "X": 738,
+    "Y": 131,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 98
+  },
+  {
+    "Id": 51,
+    "Name": "CapsLock",
+    "X": 24,
+    "Y": 172,
+    "Width": 56,
+    "Height": 30,
+    "Slot": 3
+  },
+  {
+    "Id": 52,
+    "Name": "A",
+    "X": 97,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 9
+  },
+  {
+    "Id": 53,
+    "Name": "S",
+    "X": 138,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 15
+  },
+  {
+    "Id": 54,
+    "Name": "D",
+    "X": 179,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 21
+  },
+  {
+    "Id": 55,
+    "Name": "F",
+    "X": 220,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 27
+  },
+  {
+    "Id": 56,
+    "Name": "G",
+    "X": 261,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 33
+  },
+  {
+    "Id": 57,
+    "Name": "H",
+    "X": 302,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 39
+  },
+  {
+    "Id": 58,
+    "Name": "J",
+    "X": 343,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 45
+  },
+  {
+    "Id": 59,
+    "Name": "K",
+    "X": 384,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 51
+  },
+  {
+    "Id": 60,
+    "Name": "L",
+    "X": 425,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 57
+  },
+  {
+    "Id": 61,
+    "Name": ";",
+    "X": 467,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 63
+  },
+  {
+    "Id": 62,
+    "Name": "'",
+    "X": 509,
+    "Y": 172,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 69
+  },
+  {
+    "Id": 63,
+    "Name": "Enter",
+    "X": 550,
+    "Y": 172,
+    "Width": 80,
+    "Height": 30,
+    "Slot": 75
+  },
+  {
+    "Id": 64,
+    "Name": "LShift",
+    "X": 24,
+    "Y": 213,
+    "Width": 78,
+    "Height": 30,
+    "Slot": 4
+  },
+  {
+    "Id": 65,
+    "Name": "Z",
+    "X": 118,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 10
+  },
+  {
+    "Id": 66,
+    "Name": "X",
+    "X": 159,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 16
+  },
+  {
+    "Id": 67,
+    "Name": "C",
+    "X": 200,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 22
+  },
+  {
+    "Id": 68,
+    "Name": "V",
+    "X": 241,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 28
+  },
+  {
+    "Id": 69,
+    "Name": "B",
+    "X": 282,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 34
+  },
+  {
+    "Id": 70,
+    "Name": "N",
+    "X": 323,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 40
+  },
+  {
+    "Id": 71,
+    "Name": "M",
+    "X": 364,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 46
+  },
+  {
+    "Id": 72,
+    "Name": ",",
+    "X": 406,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 52
+  },
+  {
+    "Id": 73,
+    "Name": ".",
+    "X": 448,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 58
+  },
+  {
+    "Id": 74,
+    "Name": "/",
+    "X": 488,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 64
+  },
+  {
+    "Id": 75,
+    "Name": "RShift",
+    "X": 530,
+    "Y": 214,
+    "Width": 100,
+    "Height": 30,
+    "Slot": 82
+  },
+  {
+    "Id": 76,
+    "Name": "Up",
+    "X": 695,
+    "Y": 214,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 94
+  },
+  {
+    "Id": 77,
+    "Name": "LCtrl",
+    "X": 25,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 5
+  },
+  {
+    "Id": 78,
+    "Name": "LWin",
+    "X": 76,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 11
+  },
+  {
+    "Id": 79,
+    "Name": "LAlt",
+    "X": 130,
+    "Y": 255,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 17
+  },
+  {
+    "Id": 80,
+    "Name": "Space",
+    "X": 181,
+    "Y": 255,
+    "Width": 240,
+    "Height": 30,
+    "Slot": 35
+  },
+  {
+    "Id": 81,
+    "Name": "RAlt",
+    "X": 435,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 53
+  },
+  {
+    "Id": 82,
+    "Name": "FN",
+    "X": 486,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 59
+  },
+  {
+    "Id": 83,
+    "Name": "App",
+    "X": 538,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 65
+  },
+  {
+    "Id": 84,
+    "Name": "RCtrl",
+    "X": 590,
+    "Y": 254,
+    "Width": 39,
+    "Height": 30,
+    "Slot": 83
+  },
+  {
+    "Id": 85,
+    "Name": "Left",
+    "X": 654,
+    "Y": 255,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 89
+  },
+  {
+    "Id": 86,
+    "Name": "Down",
+    "X": 694,
+    "Y": 255,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 95
+  },
+  {
+    "Id": 87,
+    "Name": "Right",
+    "X": 735,
+    "Y": 255,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 101
+  },
+  {
+    "Id": 88,
+    "Name": "Cal",
+    "X": 604,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 78
+  },
+  {
+    "Id": 89,
+    "Name": "Mute",
+    "X": 604,
+    "Y": 38,
+    "Width": 28,
+    "Height": 30,
+    "Slot": 99
+  }
+]
