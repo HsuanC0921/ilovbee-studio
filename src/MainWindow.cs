@@ -239,11 +239,19 @@ public sealed partial class MainWindow : Window {
         var picker=new FileSavePicker{SuggestedFileName="B87-草稿-"+DateTime.Now.ToString("yyyyMMdd-HHmm")};picker.FileTypeChoices.Add("iLovbee 設定檔",new List<string>{".json"});WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));var file=await picker.PickSaveFileAsync();if(file!=null){await File.WriteAllTextAsync(file.Path,JsonSerializer.Serialize(profile,Store.Json),Encoding.UTF8);Message("草稿已匯出，尚未寫入鍵盤。");}
     });
     void LightingPage(){
-        Heading("燈效","設定主背光模式與側燈。");
+        Heading("燈效","設定主背光模式。側燈使用鍵盤快捷鍵控制。");
         string[] modes={"關閉主背光","恆亮","呼吸","夢幻彩虹","一觸即發","雨中漫步","彩虹輪盤","漣漪擴散","繁星閃爍","踏雪無痕","流動貪食蛇","霓虹流動","如影隨形","正弦光波","左右掃描","旋轉風車","七彩瀑布","花開富貴","自訂燈效"};
         var mode=new ComboBox{Header="主背光模式",ItemsSource=modes,SelectedIndex=lights!=null && lights[10]<modes.Length?lights[10]:-1,PlaceholderText="請先讀取燈效",Width=320};body.Children.Add(mode);
-        var apply=B("儲存燈效模式",async()=>await Run("正在備份並驗證燈效……",async()=>{if(lights==null || mode.SelectedIndex<0)throw new InvalidOperationException("請先讀取並選擇燈效。");var before=(byte[])lights.Clone();var after=(byte[])before.Clone();after[10]=(byte)mode.SelectedIndex;await Task.Run(()=>service.SetLights(before,after));lights=await Task.Run(()=>service.ReadLights());Message("燈效模式已儲存。");}));apply.IsEnabled=lights!=null;body.Children.Add(apply);Rule();
-        body.Children.Add(T("側燈開關",20));body.Children.Add(T("Fn＋Backspace：切換側燈開關。",14,Muted));
+        var apply=B("套用燈效",async()=>await Run("正在讀取並套用燈效……",async()=>{
+            if(lights==null || mode.SelectedIndex<0)throw new InvalidOperationException("請先讀取鍵盤並選擇燈效。");
+            var before=await Task.Run(()=>service.ReadLights());
+            var after=(byte[])before.Clone();after[10]=(byte)mode.SelectedIndex;
+            if(after.SequenceEqual(before)){lights=before;Message("鍵盤目前已使用此模式。");return;}
+            await Task.Run(()=>service.SetLights(before,after));lights=after;Message("燈效已套用並完成讀回核對。");
+        }));apply.IsEnabled=lights!=null;body.Children.Add(apply);Rule();
+        body.Children.Add(T("鍵盤快捷鍵",20));
+        body.Children.Add(T("Fn＋Scroll Lock：切換主背光效果。",14,Muted));
+        body.Children.Add(T("Fn＋Backspace：切換整體 RGB 燈光（含側燈）。",14,Muted));
     }
     void PowerPage(){
         Heading("裝置狀態","檢視鍵盤連線與電量資訊。");
