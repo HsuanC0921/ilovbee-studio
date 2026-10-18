@@ -27,9 +27,13 @@ Windows x64、.NET 10 SDK。以 PowerShell 執行：
 ./dist/iLovbeeStudio.WinUI.exe
 # 只需要輕量系統匣小工具時
 ./dist/iLovbeeWidget.exe
+# 安裝到目前 Windows 帳號
+./scripts/install.ps1
 ```
 
-發佈結果包含 .NET 與 Windows App SDK 執行階段，請保留整個 dist 資料夾。無須安裝原廠軟體或以管理員執行。
+安裝程式會將完整發佈檔放在 `%LOCALAPPDATA%\Programs\iLovbee Studio`，建立開始功能表捷徑，並登錄至 Windows「已安裝的應用程式」。解除安裝可從 Windows 設定執行，或使用安裝目錄中的 `uninstall.ps1`。設定與備份會留在本機，不會隨解除安裝刪除。無須安裝原廠軟體或以管理員執行。
+
+若選擇免安裝執行，發佈結果包含 .NET 與 Windows App SDK 執行階段，請保留整個 `dist` 資料夾。
 
 小工具可單獨執行；本機測量 exe 約 1.94 MB，工作集約 16.8 MB、私有記憶體約 4.8 MB，實際用量隨系統而異。主介面不必常駐。沒有自動設定開機啟動。
 

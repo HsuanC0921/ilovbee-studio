@@ -119,7 +119,7 @@ Porcelain neutrals frame a single clear blue accent; color communicates state ra
 
 ## Layout
 
-The integrated 48px title bar sits above a responsive Fluent NavigationView. Its pane adapts between expanded and compact widths; the content area keeps device status at the top, scrollable page content in the middle, and operation feedback at the bottom. Use a 32px page inset and the observed 4/8/12/16/20px spacing steps. On the remapping page, keep the complete keyboard map prominent and the full-width assignment surface immediately below it; scale the map down as needed rather than cropping it.
+The integrated 48px title bar sits above a fixed 210px WinUI sidebar built from standard buttons. The content area keeps device status at the top, scrollable page content in the middle, and operation feedback at the bottom. Use a 32px page inset and the observed 4/8/12/16/20px spacing steps. On the remapping page, keep the complete keyboard map prominent and the full-width assignment surface immediately below it; scale the map down as needed rather than cropping it.
 
 ## Elevation & Depth
 
@@ -141,7 +141,7 @@ Use crisp, gently rounded geometry: 5px key corners, 8px assignment surface corn
 - **Focus:** Keep Fluent keyboard focus visible and preserve native interaction behavior.
 
 ### Navigation
-- **Style:** Native NavigationView with five labeled destinations and familiar iconography. Expanded width is 210px and compact width is 48px; its pane switches with available width.
+- **Style:** Five labeled WinUI buttons with familiar iconography in a fixed 210px sidebar. The active destination uses the primary blue surface; other destinations keep transparent backgrounds and muted icons.
 
 ### Keyboard Map
 - **Style:** A complete, clickable physical layout on a rounded gray bed. White key faces carry compact legends; the selected key is blue, while a changed key is pale blue with a blue outline.

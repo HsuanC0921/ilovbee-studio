@@ -30,7 +30,10 @@ public sealed partial class MainWindow : Window {
     Button? stageButton,undoButton,redoButton;
     readonly List<KeyAction> shortcutKeys=KeyActions.All().Where(a=>a.Bytes[0]==0 && a.Bytes[1]==0 && a.Bytes[2]==0 && a.Bytes[3]!=0).DistinctBy(a=>Convert.ToHexString(a.Bytes)).ToList();
     readonly StackPanel body=new(){Spacing=20,Margin=new Thickness(32,24,32,24)};
-    readonly NavigationView nav=new(){IsBackButtonVisible=NavigationViewBackButtonVisible.Collapsed,IsSettingsVisible=false,PaneDisplayMode=NavigationViewPaneDisplayMode.Auto,ExpandedModeThresholdWidth=1100,CompactModeThresholdWidth=720,OpenPaneLength=210,CompactPaneLength=48};
+    readonly Grid shell=new();
+    readonly StackPanel sidebar=new(){Background=Surface};
+    readonly Dictionary<string,Button> navigationButtons=new();
+    readonly Dictionary<string,(TextBlock Label,SymbolIcon Icon)> navigationItems=new();
     readonly TextBlock footer=T("就緒",12,Muted);
     readonly InfoBar info=new(){IsOpen=false,IsClosable=false,Severity=InfoBarSeverity.Informational,Message="準備讀取鍵盤……"};
     readonly TextBlock device=T("B87 · 讀取中",14),powerLabel=T("",12,Muted);
@@ -54,6 +57,7 @@ public sealed partial class MainWindow : Window {
     bool busy,closing,resumed;
     DateTimeOffset lastPower;
     public MainWindow() {
+        var arguments=Environment.GetCommandLineArgs();
         Title="iLovbee Studio";
         ExtendsContentIntoTitleBar=true;
         keys=JsonSerializer.Deserialize<List<PhysicalKey>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"keyboard.json")))??new();
@@ -64,7 +68,8 @@ public sealed partial class MainWindow : Window {
         var titleLine=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};
         var mark=new Border{Width=24,Height=24,CornerRadius=new CornerRadius(5),Background=Blue,Child=new SymbolIcon(Symbol.Keyboard){Foreground=new SolidColorBrush(Colors.White)}};
         titleLine.Children.Add(mark);titleLine.Children.Add(new TextBlock{Text="iLovbee Studio",FontSize=14,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,VerticalAlignment=VerticalAlignment.Center});
-        titleBar.Children.Add(titleLine);root.Children.Add(titleBar);SetTitleBar(titleBar);
+        titleBar.Children.Add(titleLine);
+        root.Children.Add(titleBar);SetTitleBar(titleBar);
         AppWindow.TitleBar.PreferredHeightOption=TitleBarHeightOption.Tall;
         AppWindow.TitleBar.ButtonBackgroundColor=ColorHelper.FromArgb(255,247,248,250);
         AppWindow.TitleBar.ButtonInactiveBackgroundColor=ColorHelper.FromArgb(255,247,248,250);
@@ -72,28 +77,42 @@ public sealed partial class MainWindow : Window {
         AppWindow.TitleBar.ButtonInactiveForegroundColor=ColorHelper.FromArgb(255,85,96,109);
         AppWindow.TitleBar.ButtonHoverBackgroundColor=ColorHelper.FromArgb(255,227,231,237);
         titleBar.SizeChanged+=(_,_)=>titleBar.Padding=new Thickness(20,0,AppWindow.TitleBar.RightInset/(titleBar.XamlRoot?.RasterizationScale??1)+16,0);
-        var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=4};brand.Children.Add(T("B87",28));brand.Children.Add(T("鍵盤設定",12,Muted));nav.PaneHeader=brand;
+        var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=4};brand.Children.Add(T("B87",28));brand.Children.Add(T("鍵盤設定",12,Muted));sidebar.Children.Add(brand);
         var names=new[]{("按鍵重設",Symbol.Keyboard),("燈效",Symbol.Highlight),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
-        foreach(var n in names)nav.MenuItems.Add(new NavigationViewItem{Content=n.Item1,Tag=n.Item1,Icon=new SymbolIcon(n.Item2)});
-        nav.SelectionChanged+=(_,e)=>{if(e.SelectedItem is NavigationViewItem item)Navigate((string)item.Tag);};
+        foreach(var n in names){
+            var icon=new SymbolIcon(n.Item2){Foreground=Muted,Width=18,Height=18};var label=T(n.Item1,14,Ink);
+            var content=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};content.Children.Add(icon);content.Children.Add(label);
+            var button=new Button{Content=content,Tag=n.Item1,Height=44,Padding=new Thickness(12,8,8,8),Margin=new Thickness(8,2,8,2),Background=new SolidColorBrush(Colors.Transparent),BorderThickness=new Thickness(0),CornerRadius=new CornerRadius(6),HorizontalContentAlignment=HorizontalAlignment.Left,HorizontalAlignment=HorizontalAlignment.Stretch};
+            AutomationProperties.SetName(button,n.Item1);ToolTipService.SetToolTip(button,n.Item1);button.Click+=(_,_)=>Navigate((string)button.Tag);
+            sidebar.Children.Add(button);navigationButtons[n.Item1]=button;navigationItems[n.Item1]=(label,icon);
+        }
+        shell.ColumnDefinitions.Add(new(){Width=new GridLength(210)});shell.ColumnDefinitions.Add(new(){Width=new GridLength(1,GridUnitType.Star)});
+        Grid.SetColumn(sidebar,0);shell.Children.Add(sidebar);
         var panel=new Grid();panel.RowDefinitions.Add(new(){Height=GridLength.Auto});panel.RowDefinitions.Add(new(){Height=new GridLength(1,GridUnitType.Star)});panel.RowDefinitions.Add(new(){Height=GridLength.Auto});
         var header=new Grid{Padding=new Thickness(32,18,32,18),BorderBrush=Line,BorderThickness=new Thickness(0,0,0,1)};header.ColumnDefinitions.Add(new(){Width=new GridLength(1,GridUnitType.Star)});header.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
         var state=new StackPanel{Spacing=4};state.Children.Add(device);state.Children.Add(powerLabel);header.Children.Add(state);
         var refresh=B("重新讀取",async()=>await Refresh());Grid.SetColumn(refresh,1);refresh.VerticalAlignment=VerticalAlignment.Center;header.Children.Add(refresh);panel.Children.Add(header);
         var scroll=new ScrollViewer{Content=body,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,HorizontalScrollMode=ScrollMode.Disabled};Grid.SetRow(scroll,1);panel.Children.Add(scroll);
-        var bottom=new StackPanel{Spacing=8,Margin=new Thickness(32,8,32,16)};bottom.Children.Add(info);bottom.Children.Add(footer);Grid.SetRow(bottom,2);panel.Children.Add(bottom);nav.Content=panel;Grid.SetRow(nav,1);root.Children.Add(nav);
+        var bottom=new StackPanel{Spacing=8,Margin=new Thickness(32,8,32,16)};bottom.Children.Add(info);bottom.Children.Add(footer);Grid.SetRow(bottom,2);panel.Children.Add(bottom);
+        Grid.SetColumn(panel,1);shell.Children.Add(panel);Grid.SetRow(shell,1);root.Children.Add(shell);
         timer.Tick+=async(_,_)=>{if(!busy && !closing)await Poll();};root.Loaded+=async(_,_)=>{
-            nav.SelectedItem=nav.MenuItems[0];
-            var area=DisplayArea.GetFromWindowId(AppWindow.Id,DisplayAreaFallback.Primary).WorkArea;
-            double scale=root.XamlRoot.RasterizationScale;
-            int width=Math.Min((int)(1320*scale),area.Width-80),height=Math.Min((int)(850*scale),area.Height-80);
-            AppWindow.MoveAndResize(new RectInt32(area.X+(area.Width-width)/2,area.Y+(area.Height-height)/2,width,height));
-            await Refresh();timer.Start();
-            var arguments=Environment.GetCommandLineArgs();
-            if(arguments.Length==3 && arguments[1]=="--ui-check")await ValidateUi(arguments[2],root);
+            try{
+                Navigate(page);
+                var area=DisplayArea.GetFromWindowId(AppWindow.Id,DisplayAreaFallback.Primary).WorkArea;
+                double scale=root.XamlRoot.RasterizationScale;
+                int width=Math.Min((int)(1320*scale),area.Width-80),height=Math.Min((int)(850*scale),area.Height-80);
+                AppWindow.MoveAndResize(new RectInt32(area.X+(area.Width-width)/2,area.Y+(area.Height-height)/2,width,height));
+                await Refresh();
+                timer.Start();
+                if(arguments.Length==3 && arguments[1]=="--ui-check")await ValidateUi(arguments[2],root);
+            }catch(Exception ex){
+                Directory.CreateDirectory(Store.Root);
+                File.WriteAllText(Path.Combine(Store.Root,"last-error.txt"),ex.ToString());
+                info.Title="啟動未完成";info.Severity=InfoBarSeverity.Error;
+                info.Message="程式已開啟，但初始化未完成。錯誤記錄已儲存至本機設定資料夾。";info.IsOpen=true;
+            }
         };Closed+=(_,_)=>{closing=true;timer.Stop();};
         test.KeyDown+=TestDown;test.KeyUp+=TestUp;test.LostFocus+=(_,_)=>pressed.Clear();
-        Navigate(page);
     }
     static SolidColorBrush Brush(string hex)=>new(ColorHelper.FromArgb(255,Convert.ToByte(hex.Substring(1,2),16),Convert.ToByte(hex.Substring(3,2),16),Convert.ToByte(hex.Substring(5,2),16)));
     static TextBlock T(string text,double size=14,Brush? color=null)=>new(){Text=text,FontSize=size,Foreground=color??Ink,TextWrapping=TextWrapping.Wrap,LineHeight=size*1.6};
@@ -124,7 +143,10 @@ public sealed partial class MainWindow : Window {
         UpdateDevice();
         Message(service.Current!=null?"鍵盤已連線。":"鍵盤未連線，請使用 USB 連接以編輯設定。");
     });
-    void Navigate(string name){page=name;switch(name){case "按鍵重設":RemapPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}}
+    void UpdateNavigation(){
+        foreach(var pair in navigationButtons){bool active=pair.Key==page;pair.Value.Background=active?Blue:new SolidColorBrush(Colors.Transparent);pair.Value.Foreground=active?new SolidColorBrush(Colors.White):Ink;pair.Value.BorderBrush=active?Blue:new SolidColorBrush(Colors.Transparent);pair.Value.BorderThickness=new Thickness(active?1:0);var visual=navigationItems[pair.Key];visual.Label.Foreground=active?new SolidColorBrush(Colors.White):Ink;visual.Icon.Foreground=active?new SolidColorBrush(Colors.White):Muted;}
+    }
+    void Navigate(string name){page=name;switch(name){case "按鍵重設":RemapPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
     void RemapPage(){
         Heading("按鍵重設","自訂按鍵、媒體控制與組合快捷鍵。");
         body.Children.RemoveAt(1);body.Spacing=12;body.Margin=new Thickness(32,16,32,16);
@@ -140,7 +162,7 @@ public sealed partial class MainWindow : Window {
             var button=B(label,()=>{selected=k;UpdateSelection();});button.Width=k.Width+8;button.Height=k.Height+6;button.MinHeight=0;button.MinWidth=0;button.Padding=new Thickness(0);button.FontSize=label.Length>4 && k.Width<40?10:12;button.CornerRadius=new CornerRadius(5);button.Tag=k;
             AutomationProperties.SetName(button,k.Id==88?"小算盤鍵":k.Name);Canvas.SetLeft(button,k.X-4);Canvas.SetTop(button,k.Y-15);canvas.Children.Add(button);buttons[k.Id]=button;
         }
-        var knob=B("",()=>{nav.SelectedItem=nav.MenuItems[3];});knob.Width=36;knob.Height=36;knob.MinHeight=0;knob.MinWidth=0;knob.Padding=new Thickness(0);knob.CornerRadius=new CornerRadius(18);knob.Background=Brush("#465365");knob.Content=new Microsoft.UI.Xaml.Shapes.Ellipse{Width=24,Height=24,Stroke=new SolidColorBrush(Colors.White),StrokeThickness=1.5};
+        var knob=B("",()=>Navigate("按鍵測試"));knob.Width=36;knob.Height=36;knob.MinHeight=0;knob.MinWidth=0;knob.Padding=new Thickness(0);knob.CornerRadius=new CornerRadius(18);knob.Background=Brush("#465365");knob.Content=new Microsoft.UI.Xaml.Shapes.Ellipse{Width=24,Height=24,Stroke=new SolidColorBrush(Colors.White),StrokeThickness=1.5};
         AutomationProperties.SetName(knob,"旋鈕，開啟按鍵測試");ToolTipService.SetToolTip(knob,"測試旋鈕按鍵");Canvas.SetLeft(knob,736);Canvas.SetTop(knob,20);canvas.Children.Add(knob);
         body.Children.Add(new Viewbox{Child=canvas,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,HorizontalAlignment=HorizontalAlignment.Center,MaxHeight=280});
         var strip=new Grid{Padding=new Thickness(16),Background=new SolidColorBrush(Colors.White),CornerRadius=new CornerRadius(8),ColumnSpacing=24};strip.ColumnDefinitions.Add(new(){Width=new GridLength(.8,GridUnitType.Star)});strip.ColumnDefinitions.Add(new(){Width=new GridLength(1.2,GridUnitType.Star)});

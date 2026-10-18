@@ -21,10 +21,7 @@
       "key-legend": { "displayName": "Key legend", "purpose": "Physical key captions." },
       "test-log": { "displayName": "Cascadia Mono", "purpose": "Keyboard test event text." }
     },
-    "breakpoints": [
-      { "name": "navigation-compact", "value": "720px" },
-      { "name": "navigation-expanded", "value": "1100px" }
-    ]
+    "breakpoints": []
   },
   "components": [
     {

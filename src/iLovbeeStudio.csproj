@@ -16,10 +16,17 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>iLovbeeStudio.WinUI</AssemblyName>
     <RootNamespace>iLovbeeStudio</RootNamespace>
-    <Version>0.3.0</Version>
+    <Version>0.3.4</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
     <None Update="keyboard.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CopyWinUIResourcesToPublishDirectory" AfterTargets="Publish">
+    <ItemGroup>
+      <_WinUIResource Include="$(TargetDir)App.xbf" Condition="Exists('$(TargetDir)App.xbf')" />
+      <_WinUIResource Include="$(TargetDir)$(AssemblyName).pri" Condition="Exists('$(TargetDir)$(AssemblyName).pri')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WinUIResource)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
