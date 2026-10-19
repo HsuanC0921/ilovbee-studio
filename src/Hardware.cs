@@ -130,7 +130,7 @@ public static class NativeHid {
         return reply.AsSpan(8,count).ToArray();
     }
     public static void Write(SafeFileHandle h,byte command,byte layer,byte[] data) {
-        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512) || (command==8 && layer==0 && data.Length==LedFrame.Bytes)))
+        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512) || (command==8 && layer==0 && data.Length==LedFrame.Bytes) || (command==0x0a && layer==0 && data.Length==ColorTable.Bytes)))
             throw new InvalidOperationException("未允許的設定寫入。");
         byte[] b=Packet(command,layer,data.Length);data.CopyTo(b,8);
         if(!HidD_SetFeature(h,b,b.Length)) throw new Win32Exception(Marshal.GetLastWin32Error(),"寫入失敗；備份仍保留。");
@@ -224,6 +224,14 @@ public sealed class KeyboardService {
     }
     /// <summary>送出一格即時燈效（指令 8，僅在燈效模式 18 時顯示）。不寫入設定，因此不備份。</summary>
     public void SendFrame(byte[] rgb) { lock(gate){using var h=Open();NativeHid.Write(h,8,0,rgb);} }
+    /// <summary>設定某模式色票第 0 格（原廠的「自訂 RGB」）。指令 0x0a 沒有讀取指令，所以以本機保存的表為準整張送出。</summary>
+    public void SetCustomColor(int mode,byte[] rgb) {
+        lock(gate) {
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();
+            var table=ColorTable.Load();ColorTable.SetCustom(table,mode,rgb);
+            NativeHid.Write(h,0x0a,0,table);ColorTable.Save(table);
+        }
+    }
     public void SetLights(byte[] expected,byte[] after) {
         if(expected.Length!=128 || after.Length!=128) throw new ArgumentException("無效的燈效設定。");
         lock(gate) {
@@ -259,5 +267,26 @@ public sealed class KeyboardService {
                 throw new IOException("還原失敗，已回復還原前設定。",original);
             }
         }
+    }
+}
+/// <summary>
+/// 燈效色票表（指令 0x0a，420 bytes）：20 個模式 × 7 色 × RGB，列索引同 payload[10]。
+/// payload 顏色索引 0..6 取該模式這一列的第 0..6 格；第 0 格就是原廠色輪的「自訂 RGB」（預設紅）。
+/// </summary>
+public static class ColorTable {
+    public const int Modes=20,Slots=7,Bytes=Modes*Slots*3;
+    static readonly byte[] Standard=Convert.FromHexString("FF000000FF000000FFFFFF00FF00FF00FFFFFFFFFF");   // 原廠預設：紅綠藍黃紫青白
+    static string FilePath=>Path.Combine(Store.Root,"colortable.hex");
+    public static byte[] Default(){var t=new byte[Bytes];for(int m=1;m<Modes;m++)Standard.CopyTo(t,m*Slots*3);return t;}
+    public static byte[] Load(){
+        try{var t=Convert.FromHexString(File.ReadAllText(FilePath).Trim());if(t.Length==Bytes)return t;}
+        catch(Exception e)when(e is IOException or FormatException){}
+        return Default();
+    }
+    public static void Save(byte[] t){Directory.CreateDirectory(Store.Root);File.WriteAllText(FilePath,Convert.ToHexString(t));}
+    public static byte[] Custom(byte[] t,int mode)=>t.AsSpan(mode*Slots*3,3).ToArray();
+    public static void SetCustom(byte[] t,int mode,byte[] rgb){
+        if(mode<1||mode>=Modes||rgb.Length!=3)throw new ArgumentException("無效的自訂顏色。");
+        rgb.CopyTo(t,mode*Slots*3);
     }
 }

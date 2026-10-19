@@ -12,7 +12,9 @@ PAGES.lighting=body=>{
   const storedLevel=m=>L&&Effects.hasBrightness(m)&&L[56+2*m]>=1&&L[56+2*m]<=4?L[56+2*m]:4;
   const storedSpeed=m=>L&&Effects.hasSpeed(m)&&(L[57+2*m]>>4)>=1&&(L[57+2*m]>>4)<=4?L[57+2*m]>>4:4;
   const storedColor=m=>L&&Effects.hasColor(m)&&(L[57+2*m]&15)<=7?L[57+2*m]&15:7;
-  const load0=m=>{level=storedLevel(m);speed=storedSpeed(m);colorIndex=storedColor(m);if(colorIndex<7)fixedColor=colorIndex};load0(chosen);
+  // 色票第 0 格是可自訂的 RGB（指令 0x0a），其餘 6 格固定
+  const customOf=m=>(S.st.colortable||"").slice(m*42,m*42+6).toLowerCase()||"ff0000";let custom="ff0000";
+  const load0=m=>{level=storedLevel(m);speed=storedSpeed(m);colorIndex=storedColor(m);if(colorIndex<7)fixedColor=colorIndex;custom=customOf(m)};load0(chosen);
   const live=S.st.live.mode!=="off";
 
   // 示意圖
@@ -25,8 +27,9 @@ PAGES.lighting=body=>{
   levelIn.oninput=()=>{level=+levelIn.value;sync()};speedIn.oninput=()=>{speed=+speedIn.value;sync()};
   const levelRow=row(h("label",null,"亮度"),levelIn,levelTxt),speedRow=row(h("label",null,"速度"),speedIn,speedTxt);
   const swatches=Effects.Palette.map((p,i)=>h("button",{class:"sw",title:Effects.PaletteNames[i],style:{background:rgbStr(...p)},onclick:()=>{fixedColor=colorIndex=i;sync()}}));
+  const rgbIn=h("input",{type:"color",title:"自訂 RGB（第一格色票）",oninput:()=>{custom=rgbIn.value.slice(1);fixedColor=colorIndex=0;sync()}});
   const mixIn=h("input",{type:"checkbox",onclick:()=>{colorIndex=mixIn.checked?7:fixedColor;sync()}});
-  const colorRow=row(h("label",null,"顏色"),h("div",{class:"row",style:{gap:"8px"}},swatches),h("label",{class:"chk",style:{width:"auto"}},mixIn,"混色"));
+  const colorRow=row(h("label",null,"顏色"),h("div",{class:"row",style:{gap:"8px"}},swatches),h("label",{class:"chk",style:{width:"auto"}},rgbIn,"自訂 RGB"),h("label",{class:"chk",style:{width:"auto"}},mixIn,"混色"));
   const hero=h("div",{class:"hero"},canvas,h("div",null,modeName,hint,status),h("div",{class:"row",style:{gap:"32px",alignItems:"flex-start"}},h("div",{style:{display:"flex",flexDirection:"column",gap:"10px"}},levelRow,speedRow),colorRow),row(applyBtn));
   body.append(hero);
 
@@ -49,8 +52,9 @@ PAGES.lighting=body=>{
     const hb=Effects.hasBrightness(chosen),hs=Effects.hasSpeed(chosen),hc=Effects.hasColor(chosen);
     levelRow.style.display=hb?"":"none";speedRow.style.display=hs?"":"none";colorRow.style.display=hc?"":"none";
     levelIn.value=level;levelTxt.textContent=`${level} / 4`+(level===1?" · 近乎熄滅":"");speedIn.value=speed;speedTxt.textContent=`${speed} / 4`;
+    const rgb=[0,2,4].map(i=>parseInt(custom.slice(i,i+2),16));Effects.Palette[0]=rgb;swatches[0].style.background=rgbStr(...rgb);swatches[0].title="自訂 #"+custom.toUpperCase();rgbIn.value="#"+custom;
     mixIn.checked=colorIndex===7;swatches.forEach((s,i)=>s.classList.toggle("on",colorIndex!==7&&i===colorIndex));
-    const changed=chosen!==current||(hb&&level!==storedLevel(chosen))||(hs&&speed!==storedSpeed(chosen))||(hc&&colorIndex!==storedColor(chosen));
+    const changed=chosen!==current||(hb&&level!==storedLevel(chosen))||(hs&&speed!==storedSpeed(chosen))||(hc&&colorIndex!==storedColor(chosen))||(hc&&custom!==customOf(chosen));
     applyBtn.disabled=S.busy||!L||!changed;
     status.textContent=!L?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":chosen!==current?`示意圖僅供預覽 · 目前：${current>=0?names[current]:"未知"} → 套用後：${names[chosen]}`:"示意圖僅供預覽 · 有尚未套用的調整。";
     tileEls.forEach((t,i)=>{t.classList.toggle("on",i===chosen);usedChips[i].style.display=i===current?"":"none"});
@@ -77,7 +81,9 @@ PAGES.lighting=body=>{
       const before=unhex(S.st.lights),after=before.slice(),m=chosen;after[10]=m;
       if(Effects.hasBrightness(m))after[56+2*m]=level;
       if(Effects.hasSpeed(m)||Effects.hasColor(m)){const hi=Effects.hasSpeed(m)?speed:before[57+2*m]>>4,lo=Effects.hasColor(m)?colorIndex:before[57+2*m]&15;after[57+2*m]=(hi<<4)|lo}
-      if(hex(after)!==hex(before)){await api("/api/lights",{expected:hex(before),after:hex(after)});say("燈效已套用並完成讀回核對。")}else say("鍵盤目前已使用這些設定。");
+      const rgbChanged=Effects.hasColor(m)&&custom!==customOf(m);
+      if(rgbChanged)await api("/api/color",{mode:m,rgb:custom});
+      if(hex(after)!==hex(before)){await api("/api/lights",{expected:hex(before),after:hex(after)});say("燈效已套用並完成讀回核對。")}else say(rgbChanged?"自訂顏色已送到鍵盤。":"鍵盤目前已使用這些設定。");
       await load();go("lighting");
     });
   }
@@ -113,7 +119,7 @@ PAGES.lighting=body=>{
     row(h("label",{class:"chk"},tapOn,"啟用 Tap"),h("label",null,"Tap 時間（預設 20）"),tapNum),setApply));
   // 側邊指示燈：payload[26]（0＝亮、1＝滅）。與 Fn+Backspace 切換的是同一個欄位，勾選即套用
   const sideOn=h("input",{type:"checkbox",checked:!!L&&L[26]===0,disabled:!L,onclick:()=>{const want=sideOn.checked;patchLights(want?"正在開啟側燈……":"正在關閉側燈……",a=>{a[26]=want?0:1},want?"側邊指示燈已開啟。":"側邊指示燈已關閉。")}});
-  body.append(card(sub("側邊指示燈"),h("label",{class:"chk"},sideOn,"顯示鍵盤兩側的指示燈"),muted("顏色由韌體固定（綠色），目前沒有可改色的設定欄位。")));
+  body.append(card(sub("側邊指示燈"),h("label",{class:"chk"},sideOn,"顯示鍵盤兩側的指示燈"),muted("側燈顏色尚未找到可設定的指令。")));
   body.append(card(sub("鍵盤快捷鍵"),row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Scroll Lock"),muted("切換主背光效果")),
     row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Backspace"),muted("切換整體 RGB 燈光（含側燈）"))));
 };

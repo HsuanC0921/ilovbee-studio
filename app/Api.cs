@@ -39,6 +39,7 @@ internal sealed class Api {
                 case "GET /api/state":return State();
                 case "GET /api/ping":return Json(w=>{w.WriteStartObject();w.WriteBoolean("connected",Connected());w.WriteEndObject();});
                 case "POST /api/lights":return SetLights(Doc(r));
+                case "POST /api/color":{using var d=Doc(r);service.SetCustomColor(d.RootElement.GetProperty("mode").GetInt32(),Convert.FromHexString(Str(d,"rgb")));return Ok();}
                 case "POST /api/keymap":return ApplyKeymap(Doc(r));
                 case "POST /api/macros/save":{var items=JsonSerializer.Deserialize(r.Body,AppJson.Default.ListMacro)??throw new ArgumentException("無效的巨集。");MacroLibrary.Replace(items);return Ok();}
                 case "POST /api/macros/write":{var items=MacroLibrary.Items.ToList();if(items.Count==0)throw new InvalidOperationException("尚無巨集。");MacroCodec.Validate(items);service.WriteMacros(MacroCodec.Build(items));return Ok();}
@@ -80,7 +81,7 @@ internal sealed class Api {
             w.WriteStartObject();
             w.WriteBoolean("connected",service.Current!=null);if(error!=null)w.WriteString("error",error);
             if(profile!=null){
-                w.WriteString("lights",profile.Lighting);
+                w.WriteString("lights",profile.Lighting);w.WriteString("colortable",Convert.ToHexString(ColorTable.Load()));
                 w.WriteStartObject("maps");foreach(var m in profile.Keymaps)w.WriteString(m.Key.ToString(),m.Value);w.WriteEndObject();
                 w.WriteStartObject("names");foreach(var m in profile.Keymaps){
                     w.WriteStartArray(m.Key.ToString());var bytes=Convert.FromHexString(m.Value);
