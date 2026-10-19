@@ -26,11 +26,12 @@ public static class LightEffects {
     /// <summary>套用色票：colorIndex 0..6 為固定色，7 為混色（保留效果原本的色相）。</summary>
     public static Color SampleTinted(int mode,double t,double x,double y,int ordinal,int colorIndex){
         var c=Sample(mode,t,x,y,ordinal);
-        if(!HasColor(mode)||c.A==0)return c;
+        if(!HasColor(mode)||mode==9||c.A==0)return c;
         if(colorIndex is >=0 and <7){var p=Palette[colorIndex];return Color.FromArgb(c.A,p.R,p.G,p.B);}
         return mode is 1 or 2?Hsv(t*.12,c.A/255.0):c;
     }
     static double Hash(int n){unchecked{uint x=(uint)n*2654435761u;x^=x>>15;x*=2246822519u;x^=x>>13;return (x&0xFFFFFF)/(double)0x1000000;}}
+    static double PathM(double x,double y){double r=Row(y);return r*800+(r%2==0?x:789-x);}
     static double Row(double y)=>y<80?0:y<111?1:y<152?2:y<192?3:y<233?4:5;
     static double Smooth(double d,double width)=>Math.Exp(-d*d/(width*width));
     static Color Rgb(double i,byte r,byte g,byte b)=>Color.FromArgb((byte)Math.Clamp(i*255,0,255),r,g,b);
@@ -53,17 +54,21 @@ public static class LightEffects {
         switch(mode){
             case 1:return Rgb(1,255,226,170);
             case 2:return Rgb(.12+.88*(.5+.5*Math.Sin(t*2.2-Math.PI/2)),255,110,200);
-            case 3:return Hsv(x/Width*.8+y/Height*.2+t*.12,1);
-            case 4:return Hsv(Hash(ordinal)+.0,Pulse(t,ordinal,5,.22));
-            case 5:{double col=Math.Floor(x/28),head=(t*(1.5+Hash((int)col+50))+Hash((int)col)*8)%9,d=head-Row(y);return Rgb(d>=0&&d<3?1-d/3:0,96,176,255);}
-            case 6:return Hsv(angle/(2*Math.PI)+t*.25,1);
-            case 7:{double period=2.6,k=Math.Floor(t/period),age=t/period-k;int c=(int)(Hash((int)k)*KeyCount);double cx=60+Hash(c+11)*670,cy=50+Hash(c+23)*220,d=Math.Sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy));return Hsv(Hash((int)k+5),Smooth(d-age*420,34)*(1-age));}
-            case 8:{double phase=Hash(ordinal+400),s=Math.Sin(Math.PI*(t*(.25+.35*Hash(ordinal+900))+phase));return Hsv(Hash(ordinal+77),Math.Pow(Math.Max(0,s),10));}
-            case 9:return Rgb(Pulse(t,ordinal,3.2,1.1),170,225,255);
-            case 10:{double len=6*Width,pos=Row(y)*Width+(Row(y)%2==0?x:Width-x),head=(t*820)%len,d=((head-pos)%len+len)%len;return Rgb(d<240?1-d/240:0,90,255,140);}
-            case 11:{double u=LightGroups.Stream[ordinal]/(double)LightGroups.StreamCount-t*.3;return Hsv(Math.Floor(u*3)/3+.05,.35+.65*Math.Pow(Math.Sin(u*Math.PI*6),2));}
-            case 12:{double best=0;int n=(int)Math.Floor(t*3);for(int k=n;k>n-6 && k>=0;k--){int c=(int)(Hash(k*13+5)*KeyCount);double cx=60+Hash(c+11)*670,cy=50+Hash(c+23)*220,d=Math.Sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy)),age=t-k/3.0;best=Math.Max(best,Math.Exp(-age/1.4)*Smooth(d,50+age*40));}return Rgb(best,255,150,90);}
-            case 13:return Hsv(x/Width*.5+.5,Smooth(y-165-70*Math.Sin(x/85-t*3),26));
+            case 3:return Hsv(t*.15,1);
+            case 4:{double best=0,hue=0,rate=2.0;int n=(int)Math.Floor(t*rate);double[] rows={53,106,147,187,228,269};
+                for(int k=n;k>n-5 && k>=0;k--){int c=(int)(Hash(k*7+3)*KeyCount);double cx=40+Hash(c+11)*700,ry=rows[(int)(Hash(c+23)*6)],age=t-k/rate,d=Math.Abs(x-cx);
+                    double v=Math.Abs(y-ry)<20?Math.Max(Smooth(d-age*520,50)*Math.Exp(-age/.9),d<14?Math.Exp(-age/.5):0):0;if(v>best){best=v;hue=Hash(k*3);}}
+                return Hsv(hue,best);}
+            case 5:{int zone=(int)Math.Floor(x/113);double period=2.4+Hash(zone+7)*1.6,tt=t+Hash(zone)*period,drop=Math.Floor(tt/period),head=(tt/period-drop)*9-1.5,d=head-Row(y);
+                return Hsv(Hash((int)drop*7+zone),d>=0&&d<2.5?1-d/2.5:0);}
+            case 6:{double a=angle/(2*Math.PI);a-=Math.Floor(a);return Hsv(Math.Floor(a*6)/6+t*.12,1);}
+            case 7:{double period=2.2,k=Math.Floor(t/period),age=t/period-k;int c=(int)(Hash((int)k)*KeyCount);double cx=40+Hash(c+11)*700,cy=50+Hash(c+23)*220,d=Math.Sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy));return Hsv(Hash((int)k+5),Smooth(d-age*950,90)*(1-age*.6));}
+            case 8:{double phase=Hash(ordinal+400),s=.5+.5*Math.Sin(2*Math.PI*(t*(.18+.3*Hash(ordinal+900))+phase));return Hsv(Hash(ordinal+77),.25+.75*s);}
+            case 9:return Hsv(Hash(ordinal*13+5)+t*.02,.6+.4*(.5+.5*Math.Sin(t*1.3+ordinal*1.7)));
+            case 10:{double M=4789,ph=(t*.14)%2,head=(ph<1?ph:2-ph)*M,m=PathM(x,y),delta=ph<1?head-m:m-head;return Rgb(delta>=0&&delta<320?1-delta/320:0,90,255,140);}
+            case 11:{double m=PathM(x,y)/4789.0;return Hsv(m*2-t*.25,.3+.7*(.5+.5*Math.Sin(m*Math.PI*6-t*3)));}
+            case 12:return Hsv(Hash(ordinal+5),Pulse(t,ordinal,4,.5));
+            case 13:{double xc=295,w=x<xc?Math.Sin(t*3+x/70):Math.Sin(t*3+(x-xc)/70+Math.PI);return Hsv(x/Width*.6+.1,.3+.7*Smooth(y-165-62*w,30));}
             case 14:{double bar=PingPong(t*.55)*(LightGroups.StreamCount-1),g=LightGroups.Stream[ordinal];return Hsv(bar/LightGroups.StreamCount*.5+.45,Smooth(g-bar,1.6));}
             case 15:{double n=LightGroups.WheelCount,g=LightGroups.Wheel[ordinal],best=0;for(int arm=0;arm<2;arm++){double d=((t*9+arm*n/2-g)%n+n)%n;best=Math.Max(best,d<7?1-d/7:0);}return Hsv(g/n+t*.1,best);}
             case 16:return Hsv(y/Height*.7-t*.3,1);

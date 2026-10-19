@@ -66,7 +66,7 @@ public sealed partial class MainWindow {
         body.Children.Add(new Border{Background=heroBg,CornerRadius=new CornerRadius(14),Padding=new Thickness(24,20,24,20),Child=hero});
         // 每個模式一張縮圖卡片，縮圖為該效果的代表畫面。
         var tiles=new GridView{SelectionMode=ListViewSelectionMode.None,IsItemClickEnabled=true,Margin=new Thickness(-4,0,-4,0)};AutomationProperties.SetName(tiles,"主背光模式");
-        var frames=new List<Border>();
+        var frames=new List<Border>();var labels=new List<StackPanel>();
         for(int i=0;i<names.Length;i++){
             var thumb=new Canvas{Width=LightEffects.Width,Height=LightEffects.Height};
             thumb.Children.Add(new Rectangle{Width=LightEffects.Width,Height=LightEffects.Height,RadiusX=18,RadiusY=18,Fill=Brush("#1B1F25")});
@@ -76,7 +76,7 @@ public sealed partial class MainWindow {
                 var r=new Rectangle{Width=k.Width,Height=k.Height,RadiusX=5,RadiusY=5,Fill=new SolidColorBrush(Color.FromArgb(255,Mix(c.R,0x3A),Mix(c.G,0x41),Mix(c.B,0x4C)))};Canvas.SetLeft(r,k.X);Canvas.SetTop(r,k.Y);thumb.Children.Add(r);
             }
             var label=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6,Height=26};label.Children.Add(new TextBlock{Text=names[i],FontSize=13,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink,VerticalAlignment=VerticalAlignment.Center});
-            if(i==current){label.Children.Add(Chip("使用中"));}
+            labels.Add(label);
             var cardBody=new StackPanel{Spacing=8,Width=176};cardBody.Children.Add(new Viewbox{Child=thumb,Width=176,Height=70,Stretch=Stretch.Uniform});cardBody.Children.Add(label);
             var frame=new Border{Padding=new Thickness(8),CornerRadius=new CornerRadius(10),BorderThickness=new Thickness(1),BorderBrush=Line,Background=new SolidColorBrush(Colors.White),Margin=new Thickness(4),Child=cardBody};
             AutomationProperties.SetName(frame,names[i]);frames.Add(frame);tiles.Items.Add(frame);
@@ -109,6 +109,7 @@ public sealed partial class MainWindow {
             bool changed=chosen!=current||(hasB&&level!=StoredLevel(chosen))||(hasS&&speed!=StoredSpeed(chosen))||(hasC&&colorIndex!=StoredColor(chosen));
             apply.IsEnabled=!busy && lights!=null && changed;
             status.Text=lights==null?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":chosen!=current?$"示意圖僅供預覽 · 目前：{(current>=0?names[current]:"未知")} → 套用後：{names[chosen]}":"示意圖僅供預覽 · 有尚未套用的調整。";
+            for(int i=0;i<labels.Count;i++){bool want=i==current,has=labels[i].Children.Count>1;if(want&&!has)labels[i].Children.Add(Chip("使用中"));else if(!want&&has)labels[i].Children.RemoveAt(1);}
             Draw();
         }
         void Mark(){for(int i=0;i<frames.Count;i++){bool on=i==chosen;frames[i].BorderBrush=on?Blue:Line;frames[i].BorderThickness=new Thickness(on?2:1);frames[i].Background=on?Brush("#EEF4FF"):new SolidColorBrush(Colors.White);}}
