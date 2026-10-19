@@ -62,5 +62,19 @@ var loud=Enumerable.Repeat(1f,LedFrame.Bands).ToArray();var quiet=new float[LedF
 for(int st=0;st<LedFrame.MusicStyles.Length;st++){var viz=new MusicVisualizer(musicKeys);bool lit=false;for(int i=1;i<=12;i++)lit|=viz.Render(st,loud,i*.1).Any(b=>b>0);
     Check(lit,"music style lights keys "+st);}
 Check(new MusicVisualizer(musicKeys).Render(0,quiet,0).All(b=>b==0),"spectrum silence is dark");
+{ // 隨機頻譜、全部樣式、全部按鍵：不得丟例外，框格長度固定
+    var rng=new Random(7);var allKeys=Enumerable.Range(0,87).Select(i=>new PhysicalKey(i,"k"+i,20+i%15*50,38+i/15*43,28,30,i)).ToList();
+    for(int st=0;st<LedFrame.MusicStyles.Length;st++){var viz=new MusicVisualizer(allKeys);bool ok=true;
+        for(int i=0;i<300;i++){var b=Enumerable.Range(0,LedFrame.Bands).Select(_=>(float)(rng.NextDouble()*(i%50<10?0:1))).ToArray();ok&=viz.Render(st,b,i/30.0).Length==LedFrame.Bytes;}
+        Check(ok,"random spectrum style "+st);}
+}
+{ // 音樂配色：單色只會產生該色的比例、兩色漸層落在兩色之間、混色等同 HSV
+    byte[] R={255,0,0},G={0,255,0},B={0,0,255};
+    var red=new MusicColor(1,new[]{R},0);var p1=red.Pick(123,1,.5,0);Check(p1.R==128&&p1.G==0&&p1.B==0,"solid color scales");
+    var white=red.Pick(0,0,1,0);Check(white.R==255&&white.G==255&&white.B==255,"solid keeps white accent");
+    var tri=new MusicColor(1,new[]{R,G,B},0);var a0=tri.Pick(0,1,1,0);var a1=tri.Pick(0,1,1,.5);var a2=tri.Pick(0,1,1,1);var am=tri.Pick(0,1,1,.25);
+    Check(MusicColor.Mix.Pick(0,1,1,0)==LedFrame.Hsv(0,1,1),"mix equals hsv");
+    Check(a0.R==255&&a1.G==255&&a2.B==255&&am.R==128&&am.G==128,"multi-stop gradient");
+}
 Console.WriteLine($"{passed} passed, 0 failed");
 

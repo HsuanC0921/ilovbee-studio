@@ -18,7 +18,7 @@ internal sealed class LiveController : IDisposable {
             if(c.Mode=="off"){Stop();return;}
             bool music=c.Mode=="music";
             if(live==null || live.Music!=music){live?.Dispose();live=null;EnterCustomMode();live=new LiveLights(service,keys,music?null:(byte[])c.Frame.Clone());}
-            live.Gain=c.Gain;live.Style=c.Style;if(!music)live.Show((byte[])c.Frame.Clone());
+            live.Gain=c.Gain;live.Style=c.Style;live.Color=c.Palette;if(!music)live.Show((byte[])c.Frame.Clone());
             Status=music?"音樂律動 · "+LedFrame.MusicStyles[c.Style]:"自訂燈光";
         }catch(Exception e)when(e is IOException or InvalidOperationException or System.ComponentModel.Win32Exception or ArgumentException){Status="錯誤："+e.Message;}
     }

@@ -50,6 +50,7 @@ internal sealed class Api {
                 case "GET /api/schemes/export":{int i=int.Parse(r.Query.Replace("index=",""));if(i<0||i>=SchemeLibrary.Items.Count)throw new ArgumentException("沒有這個方案。");return Raw(JsonSerializer.SerializeToUtf8Bytes(SchemeLibrary.Items[i],AppJson.Default.Scheme));}
                 case "POST /api/layouts/put":{using var d=Doc(r);LightLayoutLibrary.Put(Str(d,"name"),Convert.FromHexString(Str(d,"frame")));return Ok();}
                 case "POST /api/layouts/delete":{using var d=Doc(r);LightLayoutLibrary.Items.RemoveAll(l=>l.Name==Str(d,"name"));LightLayoutLibrary.Save();return Ok();}
+                case "GET /api/live":{var c=LiveConfig.Load();return Json(w=>{w.WriteStartObject();w.WriteString("mode",c.Mode);w.WriteNumber("style",c.Style);w.WriteNumber("gain",c.Gain);w.WriteNumber("colormode",c.ColorMode);w.WriteNumber("colordir",c.ColorDir);w.WriteStartArray("colors");foreach(var col in c.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("status",live.Status);w.WriteEndObject();});}
                 case "POST /api/live":return SetLive(Doc(r));
                 case "POST /api/decode":return Decode(Doc(r));
                 case "POST /api/backup":{string path=service.Backup("manual");return Json(w=>{w.WriteStartObject();w.WriteString("file",Path.GetFileName(path));w.WriteEndObject();});}
@@ -62,7 +63,7 @@ internal sealed class Api {
             return Error(e.Message);
         }
     }
-    static readonly Dictionary<string,string> StaticFiles=new(){["/effects.js"]="text/javascript; charset=utf-8",["/core.js"]="text/javascript; charset=utf-8",["/remap.js"]="text/javascript; charset=utf-8",["/macros.js"]="text/javascript; charset=utf-8",["/lighting.js"]="text/javascript; charset=utf-8",["/custom.js"]="text/javascript; charset=utf-8",["/misc.js"]="text/javascript; charset=utf-8",["/main.js"]="text/javascript; charset=utf-8",["/style.css"]="text/css; charset=utf-8"};
+    static readonly Dictionary<string,string> StaticFiles=new(){["/effects.js"]="text/javascript; charset=utf-8",["/core.js"]="text/javascript; charset=utf-8",["/remap.js"]="text/javascript; charset=utf-8",["/macros.js"]="text/javascript; charset=utf-8",["/lighting.js"]="text/javascript; charset=utf-8",["/custom.js"]="text/javascript; charset=utf-8",["/misc.js"]="text/javascript; charset=utf-8",["/main.js"]="text/javascript; charset=utf-8",["/style.css"]="text/css; charset=utf-8",["/app.ico"]="image/x-icon"};
     static JsonDocument Doc(HttpRequest r)=>JsonDocument.Parse(r.Body);
     static string Str(JsonDocument d,string name)=>d.RootElement.GetProperty(name).GetString()??"";
     static int Index(JsonDocument d,int count){int i=d.RootElement.GetProperty("index").GetInt32();if(i<0||i>=count)throw new ArgumentException("沒有這個項目。");return i;}
@@ -91,7 +92,7 @@ internal sealed class Api {
             w.WritePropertyName("macros");w.WriteRawValue(JsonSerializer.SerializeToUtf8Bytes(MacroLibrary.Items,AppJson.Default.ListMacro),true);
             w.WriteStartArray("schemes");foreach(var s in SchemeLibrary.Items)w.WriteStringValue(s.Name);w.WriteEndArray();
             w.WritePropertyName("layouts");w.WriteRawValue(JsonSerializer.SerializeToUtf8Bytes(LightLayoutLibrary.Items,AppJson.Default.ListLightLayout),true);
-            w.WriteStartObject("live");w.WriteString("mode",cfg.Mode);w.WriteNumber("style",cfg.Style);w.WriteNumber("gain",cfg.Gain);w.WriteString("frame",Convert.ToHexString(cfg.Frame));w.WriteString("status",live.Status);
+            w.WriteStartObject("live");w.WriteString("mode",cfg.Mode);w.WriteNumber("style",cfg.Style);w.WriteNumber("gain",cfg.Gain);w.WriteNumber("colormode",cfg.ColorMode);w.WriteNumber("colordir",cfg.ColorDir);w.WriteStartArray("colors");foreach(var col in cfg.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("frame",Convert.ToHexString(cfg.Frame));w.WriteString("status",live.Status);
             w.WriteStartArray("styles");foreach(var s in LedFrame.MusicStyles)w.WriteStringValue(s);w.WriteEndArray();w.WriteEndObject();
             w.WriteEndObject();
         });
@@ -132,9 +133,12 @@ internal sealed class Api {
     HttpResponse SetLive(JsonDocument d){
         using(d){
             var e=d.RootElement;var c=LiveConfig.Load();
-            string mode=Str(d,"mode");if(mode is not ("off" or "music" or "custom"))throw new ArgumentException("無效的模式。");c.Mode=mode;
+            string mode=Str(d,"mode");if(mode is not ("off" or "music" or "custom" or "keep"))throw new ArgumentException("無效的模式。");if(mode!="keep")c.Mode=mode;   // keep＝只改樣式／靈敏度／畫面，不改模式（避免畫面上過期的狀態蓋掉托盤剛切的模式）
             if(e.TryGetProperty("style",out var s))c.Style=Math.Clamp(s.GetInt32(),0,LedFrame.MusicStyles.Length-1);
             if(e.TryGetProperty("gain",out var g))c.Gain=Math.Clamp(g.GetDouble(),5,200);
+            if(e.TryGetProperty("colormode",out var cm))c.ColorMode=Math.Clamp(cm.GetInt32(),0,1);
+            if(e.TryGetProperty("colordir",out var cd))c.ColorDir=Math.Clamp(cd.GetInt32(),0,3);
+            if(e.TryGetProperty("colors",out var cl)){var l=cl.EnumerateArray().Select(x=>x.GetString()??"").Where(x=>x.Length==6).Select(x=>Convert.ToHexString(Convert.FromHexString(x))).Take(MusicColor.MaxStops).ToArray();if(l.Length>0)c.Colors=l;}
             if(e.TryGetProperty("frame",out var f)&&f.GetString() is {Length:LedFrame.Bytes*2} hex)c.Frame=Convert.FromHexString(hex);
             c.Save();
         }

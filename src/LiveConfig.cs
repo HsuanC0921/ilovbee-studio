@@ -10,6 +10,9 @@ public sealed class LiveConfig {
     public string Mode="off";           // off／music／custom
     public int Style;
     public double Gain=40;
+    public int ColorMode,ColorDir;       // 0 彩虹混色、1 自訂配色；配色方向 0 高度、1 頻率、2 時間、3 強度
+    public string[] Colors={"FF2060","20C0FF"};   // 自訂配色的 1–6 個 RRGGBB
+    public MusicColor Palette=>new(ColorMode,Colors.Select(Convert.FromHexString).ToArray(),ColorDir);
     public byte[] Frame=new byte[LedFrame.Bytes];
     static string FilePath=>Path.Combine(Store.Root,"live.ini");
     public static DateTime Stamp=>File.Exists(FilePath)?File.GetLastWriteTimeUtc(FilePath):DateTime.MinValue;
@@ -22,15 +25,19 @@ public sealed class LiveConfig {
                     case "mode":if(v is "off" or "music" or "custom")c.Mode=v;break;
                     case "style":if(int.TryParse(v,out int s))c.Style=Math.Clamp(s,0,LedFrame.MusicStyles.Length-1);break;
                     case "gain":if(double.TryParse(v,System.Globalization.CultureInfo.InvariantCulture,out double g))c.Gain=Math.Clamp(g,5,200);break;
+                    case "colormode":if(int.TryParse(v,out int cm))c.ColorMode=Math.Clamp(cm,0,1);break;
+                    case "colordir":if(int.TryParse(v,out int cd))c.ColorDir=Math.Clamp(cd,0,3);break;
+                    case "colors":{var l=v.Split(',',StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(IsHex6).Select(x=>x.ToUpperInvariant()).Take(MusicColor.MaxStops).ToArray();if(l.Length>0)c.Colors=l;break;}
                     case "frame":if(v.Length==LedFrame.Bytes*2)c.Frame=Convert.FromHexString(v);break;
                 }
             }
         }catch(Exception e)when(e is IOException or FormatException){}
         return c;
     }
+    static bool IsHex6(string v)=>v.Length==6&&v.All(Uri.IsHexDigit);
     public void Save(){
         Directory.CreateDirectory(Store.Root);string temp=FilePath+".tmp";
-        File.WriteAllLines(temp,new[]{"mode="+Mode,"style="+Style,"gain="+Gain.ToString(System.Globalization.CultureInfo.InvariantCulture),"frame="+Convert.ToHexString(Frame)});
+        File.WriteAllLines(temp,new[]{"mode="+Mode,"style="+Style,"gain="+Gain.ToString(System.Globalization.CultureInfo.InvariantCulture),"colormode="+ColorMode,"colordir="+ColorDir,"colors="+string.Join(",",Colors),"frame="+Convert.ToHexString(Frame)});
         File.Move(temp,FilePath,true);
     }
     /// <summary>讀取設定介面儲存的燈光配置（customlights.json），只取名稱與框格。</summary>

@@ -117,14 +117,13 @@ internal static unsafe class Program {
             AppendMenuW(menu,2,(UIntPtr)11,"燈光：" + (controller?.Status ?? "未執行"));AppendMenuW(menu,0x800,UIntPtr.Zero,null);
             IntPtr music=CreatePopupMenu();for(int i=0;i<LedFrame.MusicStyles.Length;i++)AppendMenuW(music,(cfg.Mode=="music"&&cfg.Style==i)?8u:0u,(UIntPtr)(20+i),LedFrame.MusicStyles[i]);
             AppendMenuW(menu,0x10,(UIntPtr)music,"音樂律動");
-            IntPtr custom=CreatePopupMenu();AppendMenuW(custom,cfg.Mode=="custom"?8u:0u,(UIntPtr)40,"目前的自訂燈光");for(int i=0;i<layouts.Count && i<20;i++)AppendMenuW(custom,0,(UIntPtr)(100+i),layouts[i].Name);
+            IntPtr custom=CreatePopupMenu();if(layouts.Count==0)AppendMenuW(custom,1,UIntPtr.Zero,"尚無燈光配置（到設定視窗建立）");for(int i=0;i<layouts.Count && i<20;i++)AppendMenuW(custom,0,(UIntPtr)(100+i),layouts[i].Name);
             AppendMenuW(menu,0x10,(UIntPtr)custom,"自訂燈光");
             AppendMenuW(menu,0,(UIntPtr)41,"停止並恢復原本燈效");AppendMenuW(menu,0x800,UIntPtr.Zero,null);
             AppendMenuW(menu,0,(UIntPtr)1,"開啟設定");AppendMenuW(menu,0,(UIntPtr)2,"更新電量");AppendMenuW(menu,0,(UIntPtr)3,"Windows 藍牙設定");
             AppendMenuW(menu,AutoStart()?8u:0u,(UIntPtr)42,"開機自動啟動");AppendMenuW(menu,0x800,UIntPtr.Zero,null);AppendMenuW(menu,0,(UIntPtr)4,"結束小工具");
             GetCursorPos(out var point);SetForegroundWindow(hwnd);uint chosen=TrackPopupMenu(menu,0x100|2,point.X,point.Y,0,hwnd,IntPtr.Zero);DestroyMenu(menu);DestroyMenu(music);DestroyMenu(custom);
-            if(chosen is >=20 and <26){cfg.Mode="music";cfg.Style=(int)chosen-20;cfg.Save();PollConfig();return IntPtr.Zero;}
-            if(chosen==40){cfg.Mode="custom";cfg.Save();PollConfig();return IntPtr.Zero;}
+            if(chosen>=20 && chosen<20+LedFrame.MusicStyles.Length){cfg.Mode="music";cfg.Style=(int)chosen-20;cfg.Save();PollConfig();return IntPtr.Zero;}
             if(chosen>=100 && chosen-100<layouts.Count){cfg.Mode="custom";cfg.Frame=layouts[(int)chosen-100].Frame;cfg.Save();PollConfig();return IntPtr.Zero;}
             if(chosen==41){cfg.Mode="off";cfg.Save();PollConfig();return IntPtr.Zero;}
             if(chosen==42){SetAutoStart(!AutoStart());return IntPtr.Zero;}
