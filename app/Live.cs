@@ -2,13 +2,14 @@ using iLovbeeStudio;
 
 /// <summary>依 live.ini 控制即時燈效；切到自訂模式前記下原本的燈效模式，停止或結束時還原。</summary>
 internal sealed class LiveController : IDisposable {
-    readonly KeyboardService service=new();
+    readonly KeyboardService service;
     readonly List<PhysicalKey> keys;
     LiveLights? live;
     static string RestoreFile=>Path.Combine(Store.Root,"live-restore.txt");
     public string Status{get;private set;}="未執行";
-    public LiveController(){
-        keys=KeyLayout.Load(Path.Combine(AppContext.BaseDirectory,"keyboard.json"));
+    public LiveController(KeyboardService service){
+        this.service=service;
+        keys=KeyLayout.Parse(System.Text.Encoding.UTF8.GetString(Api.Resource("keyboard.json")));
         // 上次異常結束時，鍵盤可能還停在自訂模式；先還原。
         try{Restore();}catch(Exception e)when(e is IOException or InvalidOperationException or System.ComponentModel.Win32Exception){}
     }

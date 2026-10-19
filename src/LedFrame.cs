@@ -27,8 +27,12 @@ public sealed class MusicVisualizer {
     double lastBeat,bass;
     public MusicVisualizer(IReadOnlyList<PhysicalKey> keys){this.keys=keys;for(int i=0;i<history.Length;i++)history[i]=new float[LedFrame.Bands];}
     static int Band(PhysicalKey k,int n)=>Math.Clamp((int)((k.X+k.Width/2.0-20)/760*n),0,n-1);
-    public byte[] Render(int style,float[] bands,double t){
-        var f=new byte[LedFrame.Bytes];int n=bands.Length;
+    double peak;
+    public byte[] Render(int style,float[] raw,double t){
+        var f=new byte[LedFrame.Bytes];int n=raw.Length;
+        // 自動增益：以近期峰值正規化，再平方拉開強弱，避免音量大時整片都亮。
+        peak=Math.Max(raw.Max(),peak*.997);float norm=(float)Math.Max(.25,peak);
+        var bands=raw.Select(b=>{float x=Math.Clamp(b/norm,0,1);return x*x;}).ToArray();
         float low=(bands[0]+bands[1]+bands[2])/3;bass=Math.Max(low,bass*.9);
         bool beat=low>.35 && low>bass*.92 && t-lastBeat>.18;if(beat)lastBeat=t;
         if(style==2 && t-wf>.07){wf=t;for(int r=history.Length-1;r>0;r--)Array.Copy(history[r-1],history[r],n);Array.Copy(bands,history[0],n);}
@@ -55,8 +59,9 @@ public sealed class MusicVisualizer {
 }
 /// <summary>讀取 keyboard.json 的按鍵座標（不使用反射，Native AOT 可用）。</summary>
 public static class KeyLayout {
-    public static List<PhysicalKey> Load(string path){
-        using var doc=JsonDocument.Parse(File.ReadAllText(path));
+    public static List<PhysicalKey> Load(string path)=>Parse(File.ReadAllText(path));
+    public static List<PhysicalKey> Parse(string json){
+        using var doc=JsonDocument.Parse(json);
         return doc.RootElement.EnumerateArray().Select(e=>new PhysicalKey(e.GetProperty("Id").GetInt32(),e.GetProperty("Name").GetString()??"",e.GetProperty("X").GetDouble(),e.GetProperty("Y").GetDouble(),e.GetProperty("Width").GetDouble(),e.GetProperty("Height").GetDouble(),e.GetProperty("Slot").GetInt32())).ToList();
     }
 }

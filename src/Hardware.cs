@@ -18,19 +18,18 @@ public sealed record DeviceProfile(int Schema, string Device, string Release, Da
 public sealed record PhysicalKey(int Id, string Name, double X, double Y, double Width, double Height, int Slot);
 public static class Store {
     public static readonly string Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "iLovbeeStudio");
-#if !WIDGET
-    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true };   // 僅供非 AOT 的診斷用途；AOT 一律使用 AppJson
     public static string Write<T>(string directory, string name, T value) {
         string folder = Path.Combine(Root, directory); Directory.CreateDirectory(folder);
         string file = Path.Combine(folder, name);
         string temp = file + ".tmp-" + Guid.NewGuid().ToString("N");
-        try { File.WriteAllText(temp, JsonSerializer.Serialize(value, Json), Encoding.UTF8); File.Move(temp, file, true); }
+        try { File.WriteAllText(temp, JsonSerializer.Serialize(value, (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)(AppJson.Default.GetTypeInfo(typeof(T)) ?? throw new NotSupportedException(typeof(T).Name))), Encoding.UTF8); File.Move(temp, file, true); }
         finally { if (File.Exists(temp)) File.Delete(temp); }
         return file;
     }
     public static DeviceProfile Load(string path) {
         if (new FileInfo(path).Length > 65536) throw new InvalidDataException("設定檔超過大小上限。");
-        var profile = JsonSerializer.Deserialize<DeviceProfile>(File.ReadAllText(path), Json) ?? throw new InvalidDataException("無效的設定檔。");
+        var profile = JsonSerializer.Deserialize(File.ReadAllText(path), AppJson.Default.DeviceProfile) ?? throw new InvalidDataException("無效的設定檔。");
         Validate(profile); return profile;
     }
     public static void Validate(DeviceProfile profile) {
@@ -45,7 +44,6 @@ public static class Store {
         if (profile.Lighting is null || profile.Lighting.Length != 256 || Convert.FromHexString(profile.Lighting).Length != 128)
             throw new InvalidDataException("燈效資料長度不正確。");
     }
-#endif
 }
 public static class NativeHid {
     [StructLayout(LayoutKind.Sequential)] struct InterfaceData { public int Size; public Guid Class; public int Flags; public IntPtr Reserved; }
@@ -159,24 +157,20 @@ public sealed class KeyboardService {
     }
     public byte[] ReadLights() { lock(gate){using var h=Open();return NativeHid.Read(h,0x84,0,128);} }
     public PowerInfo ReadPower() { lock(gate){using var h=Open();var b=NativeHid.Read(h,0x87,0,2);return new(b[0],b[1],DateTimeOffset.Now);} }
-#if !WIDGET
     public DeviceProfile Capture() {
         lock(gate) {
             var maps=Enumerable.Range(0,4).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
             return new(1,"258A:0199","2010",DateTimeOffset.Now,maps,Convert.ToHexString(ReadLights()));
         }
     }
-#endif
-#if WIDGET
-    /// <summary>小工具只會改燈效模式，備份僅保存燈效 payload（十六進位文字）。</summary>
+    const int KeepBackups=60;
     public string Backup(string purpose) {
-        string folder=Path.Combine(Store.Root,"backups");Directory.CreateDirectory(folder);
-        string file=Path.Combine(folder,DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".lighting.txt");
-        File.WriteAllText(file,Convert.ToHexString(ReadLights()));return file;
+        string file=Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
+        // 自動備份只保留最新的 KeepBackups 份；手動備份（-manual）不刪。
+        try{foreach(var old in Directory.GetFiles(Path.GetDirectoryName(file)!,"*.json").Where(f=>!f.EndsWith("-manual.json")).OrderDescending().Skip(KeepBackups))File.Delete(old);}
+        catch(IOException){}catch(UnauthorizedAccessException){}
+        return file;
     }
-#else
-    public string Backup(string purpose) => Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
-#endif
     public static void CheckConflict() {
         foreach(var p in System.Diagnostics.Process.GetProcessesByName("DeviceDriver")) {
             using(p) {
@@ -186,7 +180,6 @@ public sealed class KeyboardService {
             }
         }
     }
-#if !WIDGET
     public void ApplyMappings(Dictionary<int,byte[]> expected,Dictionary<int,byte[]> desired) {
         MappingEditor.Validate(expected);MappingEditor.Validate(desired);
         foreach(int layer in expected.Keys)if(!expected[layer].AsSpan(59*4,4).SequenceEqual(desired[layer].AsSpan(59*4,4)))throw new ArgumentException("FN 鍵必須保留。");
@@ -229,7 +222,6 @@ public sealed class KeyboardService {
         if(buffer.Length<4 || buffer.Length>MacroCodec.MaxBytes) throw new ArgumentException("無效的巨集資料。");
         lock(gate) { NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();Backup("before-macro");NativeHid.Write(h,5,0,buffer); }
     }
-#endif
     /// <summary>送出一格即時燈效（指令 8，僅在燈效模式 18 時顯示）。不寫入設定，因此不備份。</summary>
     public void SendFrame(byte[] rgb) { lock(gate){using var h=Open();NativeHid.Write(h,8,0,rgb);} }
     public void SetLights(byte[] expected,byte[] after) {
@@ -248,7 +240,6 @@ public sealed class KeyboardService {
             }
         }
     }
-#if !WIDGET
     public void Restore(DeviceProfile profile) {
         Store.Validate(profile);
         lock(gate) {
@@ -269,5 +260,4 @@ public sealed class KeyboardService {
             }
         }
     }
-#endif
 }

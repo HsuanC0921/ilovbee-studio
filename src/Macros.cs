@@ -64,7 +64,7 @@ public static class MacroCodec {
 public static class MacroLibrary {
     static string FilePath=>Path.Combine(Store.Root,"macros.json");
     public static List<Macro> Items{get;private set;}=Load();
-    static List<Macro> Load(){try{return JsonSerializer.Deserialize<List<Macro>>(File.ReadAllText(FilePath),Store.Json)??new();}catch{return new();}}
+    static List<Macro> Load(){try{return JsonSerializer.Deserialize(File.ReadAllText(FilePath),AppJson.Default.ListMacro)??new();}catch{return new();}}
     public static void Save(){Store.Write("","macros.json",Items);}
     public static void Replace(List<Macro> items){MacroCodec.Validate(items);Items=items;Save();}
 }
