@@ -24,7 +24,7 @@ PAGES.lighting=body=>{
   const levelIn=mkRange(),speedIn=mkRange(),levelTxt=h("span",{class:"muted"}),speedTxt=h("span",{class:"muted"});
   levelIn.oninput=()=>{level=+levelIn.value;sync()};speedIn.oninput=()=>{speed=+speedIn.value;sync()};
   const levelRow=row(h("label",null,"亮度"),levelIn,levelTxt),speedRow=row(h("label",null,"速度"),speedIn,speedTxt);
-  const swatches=Effects.Palette.map((p,i)=>h("button",{class:"sw",title:Effects.PaletteNames[i],style:{background:rgbStr(...p)},onclick:()=>{fixedColor=colorIndex=i;sync()}}));
+  const swatches=Effects.Palette.map((p,i)=>h("button",{class:"sw",title:Effects.PaletteNames[i],style:{background:rgbStr(...p)},onclick:()=>{if(chosen===2&&i===0){say("呼吸模式的「紅」在實機上會顯示為白色，請改選其他顏色。",true);return}fixedColor=colorIndex=i;sync()}}));
   const mixIn=h("input",{type:"checkbox",onclick:()=>{colorIndex=mixIn.checked?7:fixedColor;sync()}});
   const colorRow=row(h("label",null,"顏色"),h("div",{class:"row",style:{gap:"8px"}},swatches),h("label",{class:"chk",style:{width:"auto"}},mixIn,"混色"));
   const hero=h("div",{class:"hero"},canvas,h("div",null,modeName,hint,status),h("div",{class:"row",style:{gap:"32px",alignItems:"flex-start"}},h("div",{style:{display:"flex",flexDirection:"column",gap:"10px"}},levelRow,speedRow),colorRow),row(applyBtn));
