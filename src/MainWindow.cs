@@ -238,35 +238,51 @@ public sealed partial class MainWindow : Window {
         var profile=new DeviceProfile(1,"258A:0199","2010",DateTimeOffset.Now,editor.Draft.ToDictionary(p=>p.Key,p=>Convert.ToHexString(p.Value)),Convert.ToHexString(lights));
         var picker=new FileSavePicker{SuggestedFileName="B87-草稿-"+DateTime.Now.ToString("yyyyMMdd-HHmm")};picker.FileTypeChoices.Add("iLovbee 設定檔",new List<string>{".json"});WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));var file=await picker.PickSaveFileAsync();if(file!=null){await File.WriteAllTextAsync(file.Path,JsonSerializer.Serialize(profile,Store.Json),Encoding.UTF8);Message("草稿已匯出，尚未寫入鍵盤。");}
     });
+    static Border Card(UIElement child)=>new(){Background=new SolidColorBrush(Colors.White),BorderBrush=Line,BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(8),Padding=new Thickness(20),Child=child};
+    static Border Chip(string text)=>new(){Background=Brush("#E3E7ED"),CornerRadius=new CornerRadius(5),Padding=new Thickness(8,3,8,3),Child=new TextBlock{Text=text,FontSize=12,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink}};
+    static TextBlock Sub(string text)=>new(){Text=text,FontSize=16,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink};
+    static StackPanel Row(params UIElement[] items){var row=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};foreach(var item in items)row.Children.Add(item);return row;}
     void LightingPage(){
-        Heading("燈效","設定主背光模式。側燈使用鍵盤快捷鍵控制。");
+        Heading("燈效","選擇主背光模式，套用前會重新讀取鍵盤狀態。");
         string[] modes={"關閉主背光","恆亮","呼吸","夢幻彩虹","一觸即發","雨中漫步","彩虹輪盤","漣漪擴散","繁星閃爍","踏雪無痕","流動貪食蛇","霓虹流動","如影隨形","正弦光波","左右掃描","旋轉風車","七彩瀑布","花開富貴","自訂燈效"};
-        var mode=new ComboBox{Header="主背光模式",ItemsSource=modes,SelectedIndex=lights!=null && lights[10]<modes.Length?lights[10]:-1,PlaceholderText="請先讀取燈效",Width=320};body.Children.Add(mode);
-        var apply=B("套用燈效",async()=>await Run("正在讀取並套用燈效……",async()=>{
-            if(lights==null || mode.SelectedIndex<0)throw new InvalidOperationException("請先讀取鍵盤並選擇燈效。");
+        int current=lights!=null && lights[10]<modes.Length?lights[10]:-1;
+        var grid=new GridView{SelectionMode=ListViewSelectionMode.Single,IsEnabled=lights!=null,Margin=new Thickness(-4,0,-4,0)};AutomationProperties.SetName(grid,"主背光模式");
+        foreach(var m in modes)grid.Items.Add(new TextBlock{Text=m,FontSize=14,Margin=new Thickness(10,8,10,8)});
+        grid.SelectedIndex=current;
+        var status=T("",12,Muted);var apply=B("套用燈效",()=>{});apply.Style=(Style)Application.Current.Resources["AccentButtonStyle"];
+        void Sync(){
+            apply.IsEnabled=!busy && lights!=null && grid.SelectedIndex>=0 && grid.SelectedIndex!=current;
+            status.Text=lights==null?"請先連接 USB 並讀取鍵盤。":grid.SelectedIndex>=0 && grid.SelectedIndex!=current?$"目前：{(current>=0?modes[current]:"未知")} → 待套用：{modes[grid.SelectedIndex]}":$"目前：{(current>=0?modes[current]:"未知")}";
+        }
+        grid.SelectionChanged+=(_,_)=>Sync();Sync();
+        apply.Click+=async(_,_)=>await Run("正在讀取並套用燈效……",async()=>{
+            if(lights==null || grid.SelectedIndex<0)throw new InvalidOperationException("請先讀取鍵盤並選擇燈效。");
             var before=await Task.Run(()=>service.ReadLights());
-            var after=(byte[])before.Clone();after[10]=(byte)mode.SelectedIndex;
-            if(after.SequenceEqual(before)){lights=before;Message("鍵盤目前已使用此模式。");return;}
-            await Task.Run(()=>service.SetLights(before,after));lights=after;Message("燈效已套用並完成讀回核對。");
-        }));apply.IsEnabled=lights!=null;body.Children.Add(apply);Rule();
-        body.Children.Add(T("鍵盤快捷鍵",20));
-        body.Children.Add(T("Fn＋Scroll Lock：切換主背光效果。",14,Muted));
-        body.Children.Add(T("Fn＋Backspace：切換整體 RGB 燈光（含側燈）。",14,Muted));
+            var after=(byte[])before.Clone();after[10]=(byte)grid.SelectedIndex;
+            if(after.SequenceEqual(before)){lights=before;current=grid.SelectedIndex;Sync();Message("鍵盤目前已使用此模式。");return;}
+            await Task.Run(()=>service.SetLights(before,after));lights=after;current=grid.SelectedIndex;Sync();Message("燈效已套用並完成讀回核對。");
+        });
+        var mode=new StackPanel{Spacing=16};mode.Children.Add(Sub("主背光模式"));mode.Children.Add(grid);mode.Children.Add(Row(apply,status));body.Children.Add(Card(mode));
+        var keysCard=new StackPanel{Spacing=12};keysCard.Children.Add(Sub("鍵盤快捷鍵"));
+        keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Scroll Lock"),T("切換主背光效果",14,Muted)));
+        keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Backspace"),T("切換整體 RGB 燈光（含側燈）",14,Muted)));body.Children.Add(Card(keysCard));
     }
     void PowerPage(){
         Heading("裝置狀態","檢視鍵盤連線與電量資訊。");
-        body.Children.Add(T(service.Current!=null?"USB 已連線":"USB 未連線",22));
-        body.Children.Add(T("使用 USB 連接鍵盤，即可編輯按鍵、燈效與設定檔。",14,Muted));Rule();
-        body.Children.Add(T(battery.Latest?.Percent is int percent?$"電量 {percent}%":"電量尚未取得",24));
-        if(battery.Latest?.Percent is int value)body.Children.Add(new ProgressBar{Value=value,Minimum=0,Maximum=100,Width=320,HorizontalAlignment=HorizontalAlignment.Left});
-        body.Children.Add(T(battery.Latest?.Percent!=null?$"Windows 最近回報：{battery.Latest.ReadAt.ToLocalTime():MM/dd HH:mm}":battery.Latest?.State??"請連接藍牙以讀取電量。",12,Muted));
-        body.Children.Add(B("更新電量",async()=>await Run("正在讀取電量……",async()=>{await battery.ReadAsync();UpdateDevice();PowerPage();Message(battery.Latest?.Percent!=null?"電量已更新。":battery.Latest?.State??"未取得電量。");})));
-        body.Children.Add(B("開啟 Windows 藍牙設定",()=>Process.Start(new ProcessStartInfo("ms-settings:bluetooth"){UseShellExecute=true})));
-        body.Children.Add(B("開啟系統匣小工具",()=>{string path=Path.Combine(AppContext.BaseDirectory,"iLovbeeWidget.exe");if(File.Exists(path))Process.Start(new ProcessStartInfo(path){UseShellExecute=true});else Message("找不到小工具，請使用完整發佈資料夾。",true);}));
-        Rule();
-        body.Children.Add(T("裝置診斷",20));
-        body.Children.Add(T("將裝置識別、連線紀錄與電量回報儲存至本機檔案。",14,Muted));
-        body.Children.Add(B("匯出診斷",async()=>await Run("正在匯出診斷……",async()=>{var devices=await Task.Run(()=>service.Scan());string file=Store.Write("diagnostics",DateTime.Now.ToString("yyyyMMdd-HHmmss")+".json",new{Version="0.3.0",Devices=devices,Power=power,Battery=battery.Latest,BatteryDiagnostic=battery.LastDiagnostic,Events=events,FirmwareModified=false});Message("已儲存："+file);})));
+        bool usb=service.Current!=null;
+        var link=new StackPanel{Spacing=6};link.Children.Add(Row(new Microsoft.UI.Xaml.Shapes.Ellipse{Width=10,Height=10,Fill=usb?Blue:Muted},T(usb?"USB 已連線":"USB 未連線",20)));
+        link.Children.Add(T("使用 USB 連接鍵盤，即可編輯按鍵、燈效與設定檔。",14,Muted));body.Children.Add(Card(link));
+        var power=new StackPanel{Spacing=12};power.Children.Add(T(battery.Latest?.Percent is int percent?$"電量 {percent}%":"電量尚未取得",24));
+        if(battery.Latest?.Percent is int value)power.Children.Add(new ProgressBar{Value=value,Minimum=0,Maximum=100,Width=320,HorizontalAlignment=HorizontalAlignment.Left});
+        power.Children.Add(T(battery.Latest?.Percent!=null?$"Windows 最近回報：{battery.Latest.ReadAt.ToLocalTime():MM/dd HH:mm}":battery.Latest?.State??"請連接藍牙以讀取電量。",12,Muted));
+        power.Children.Add(Row(
+            B("更新電量",async()=>await Run("正在讀取電量……",async()=>{await battery.ReadAsync();UpdateDevice();PowerPage();Message(battery.Latest?.Percent!=null?"電量已更新。":battery.Latest?.State??"未取得電量。");})),
+            B("開啟 Windows 藍牙設定",()=>Process.Start(new ProcessStartInfo("ms-settings:bluetooth"){UseShellExecute=true})),
+            B("開啟系統匣小工具",()=>{string path=Path.Combine(AppContext.BaseDirectory,"iLovbeeWidget.exe");if(File.Exists(path))Process.Start(new ProcessStartInfo(path){UseShellExecute=true});else Message("找不到小工具，請使用完整發佈資料夾。",true);})));
+        body.Children.Add(Card(power));
+        var diag=new StackPanel{Spacing=12};diag.Children.Add(Sub("裝置診斷"));diag.Children.Add(T("將裝置識別、連線紀錄與電量回報儲存至本機檔案。",14,Muted));
+        diag.Children.Add(B("匯出診斷",async()=>await Run("正在匯出診斷……",async()=>{var devices=await Task.Run(()=>service.Scan());string file=Store.Write("diagnostics",DateTime.Now.ToString("yyyyMMdd-HHmmss")+".json",new{Version="0.3.6",Devices=devices,Power=this.power,Battery=battery.Latest,BatteryDiagnostic=battery.LastDiagnostic,Events=events,FirmwareModified=false});Message("已儲存："+file);})));
+        body.Children.Add(Card(diag));
     }
     void TestPage(){
         Heading("按鍵測試","檢視按下、放開及重複輸入事件。");
