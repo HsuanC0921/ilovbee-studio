@@ -1,58 +1,186 @@
+<div align="center">
+
 # iLovbee Studio
 
-個人使用的 B87 繁體中文 Windows 桌面工具。C#、.NET 10、**WinUI 3**，不是 WPF 外觀套件或 WebView。
+**A lightweight, open replacement for the discontinued iLovbee Keyboard app, built for the BY Tech B87 (and, in principle, keyboards on the same controller solution).**
 
-支援硬體：BY Tech B87，USB `258A:0199`，release `2010`。其他同名 B87 尚不適用。
+English · [繁體中文](README.zh-TW.md)
 
-## 功能
+![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D4)
+![.NET](https://img.shields.io/badge/.NET-10%20Native%20AOT-512BD4)
+![Tauri](https://img.shields.io/badge/shell-Tauri%202-24C8DB)
+![Status](https://img.shields.io/badge/status-personal%20project-lightgrey)
 
-- 按鍵重設：搜尋一般按鍵、F13–F24、媒體鍵、Win+D，或自訂 Ctrl／Shift／Alt／Win 組合鍵。
-- 跨層編輯草稿、復原／重做、單鍵取消、變更清單與批次套用；草稿自動保存在本機。
-- 內建燈效模式；側燈使用實體 Fn＋Backspace。
-- 三層映射與燈效設定檔匯出／還原。
-- 修改前完整備份、寫入後讀回核對；失敗時嘗試還原並確認結果。
-- 視窗內按鍵測試、USB 連線狀態、藍牙電量與本機診斷匯出。
-- 獨立 NativeAOT 系統匣小工具：電量圖示、提示、低電量通知、更新與開啟主程式。
+</div>
 
-原小算盤鍵目前設為 Win+D：按一次顯示桌面，再按一次回復視窗。旋鈕位於 Pause 位置，圖中的旋鈕可開啟測試。
+---
 
-電量讀取 Windows 最近回報的藍牙百分比與時間，已在實機取得 100%；首次需要配對並連接藍牙。切回 USB 後可能顯示最近一次回報，並非持續即時測量。研究細節留在 [開發文件](docs/firmware.md)。
+iLovbee Studio configures the BY Tech B87 mechanical keyboard on Windows: key remapping, macros, lighting, per-key RGB and audio-reactive effects. It is one ~3 MB Native AOT executable that runs in the system tray. The settings UI is a local web page, shown in an optional Tauri window with Mica and a native-looking title bar.
 
-## 建置與執行
+The interface is in Traditional Chinese. The vendor app is no longer updated. This project rebuilds its features from the device protocol, decoded by watching real hardware, and adds several features the vendor app does not have.
 
-Windows x64、.NET 10 SDK。以 PowerShell 執行：
+## Table of contents
+
+- [Features](#features)
+- [Supported hardware](#supported-hardware)
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [How it works](#how-it-works)
+- [Safety](#safety)
+- [Development](#development)
+- [Limitations](#limitations)
+- [Disclaimer](#disclaimer)
+- [License](#license)
+
+## Features
+
+### Keys and macros
+
+- **Remapping** on all four layers: Base, FN1, FN2 and Tap.
+  - Supports regular keys, F13–F24, media keys, Win+D and custom key combinations.
+  - Edits are drafts, with undo/redo and batch apply.
+- **Macros**: record them or edit by hand, including delays and modifiers. Up to 8 macros are written to the keyboard, and each can be bound to any key. The macro library can be imported and exported.
+- **Profiles**: save all four layers locally and apply them in one click. Profiles can be renamed, imported and exported.
+
+### Lighting
+
+- **Built-in modes 1–17** with animated previews, plus brightness, speed, palette colour and colour mixing.
+- **Custom RGB per mode**: set any colour for the first palette slot. This is the same setting as the vendor app's colour wheel.
+- **Side indicator lights**: switch them on or off with a checkbox, with no Fn+Backspace needed.
+- **Keyboard settings**: debounce (office or gaming), Tap on/off and Tap timing, and the wireless sleep timeout.
+
+### Custom lighting (streamed live)
+
+- **Per-key RGB**: paint any key any colour.
+- **Per-key effects**: each key is steady, blinking, breathing or rainbow-cycling, with an adjustable speed.
+- Rainbow and row-gradient fills, plus a library of up to 20 saved layouts.
+- **Music visualizer**: 12 audio-reactive styles driven by whatever Windows is playing. Colours are a rainbow mix or a custom gradient of 1–6 colours, which can run by height, frequency, time or intensity.
+
+### Everything else
+
+- **Automatic backups**: every write is backed up first (the newest 60 are kept), read back to verify, and rolled back on failure. Full profile export and restore.
+- Key tester, USB connection status, Bluetooth battery level and low-battery alerts.
+- Tray menu with quick toggles and an option to start with Windows.
+
+## Supported hardware
+
+| Device | USB ID | Firmware release |
+|---|---|---|
+| BY Tech B87 | `258A:0199` | `2010` |
+
+In principle, iLovbee Studio works only with this keyboard. It may also work with keyboards built on the same controller and firmware solution, which speak the same protocol. Everything here was decoded and tested on one B87, and nothing has been verified on any other model.
+
+- Other keyboards sold as "B87" may use different firmware and are **not** supported.
+- The app refuses to write to any device whose USB ID and release do not match the table above exactly, including keyboards on the same solution.
+- To try another keyboard on the same solution, you have to change that check in the source yourself. Make a full backup first.
+
+## Getting started
+
+### Requirements
+
+- Windows 10/11 x64
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- Visual Studio Build Tools with the C++ workload, used to link Native AOT
+- *Optional:* a Rust toolchain, to build the Tauri window
+
+### Build and install
 
 ```powershell
-./build.ps1
-./dist/iLovbeeStudio.WinUI.exe
-# 只需要輕量系統匣小工具時
-./dist/iLovbeeWidget.exe
-# 安裝到目前 Windows 帳號
-./scripts/install.ps1
+git clone https://github.com/HsuanC0921/ilovbee-studio.git
+cd ilovbee-studio
+./build.ps1               # runs the tests, then publishes to dist/
+./scripts/install.ps1     # installs for the current Windows user
 ```
 
-安裝程式會將完整發佈檔放在 `%LOCALAPPDATA%\Programs\iLovbee Studio`，建立開始功能表捷徑，並登錄至 Windows「已安裝的應用程式」。解除安裝可從 Windows 設定執行，或使用安裝目錄中的 `uninstall.ps1`。設定與備份會留在本機，不會隨解除安裝刪除。無須安裝原廠軟體或以管理員執行。
+To include the optional Tauri window, build it first. `build.ps1` picks it up automatically:
 
-若選擇免安裝執行，發佈結果包含 .NET 與 Windows App SDK 執行階段，請保留整個 `dist` 資料夾。
+```powershell
+cd ui
+cargo build --release
+```
 
-小工具可單獨執行；本機測量 exe 約 1.94 MB，工作集約 16.8 MB、私有記憶體約 4.8 MB，實際用量隨系統而異。主介面不必常駐。沒有自動設定開機啟動。
+Without it, the settings UI opens as an Edge app window instead, or in the default browser if Edge is missing.
 
-開啟前請結束其他 iLovbee 設定程式。連接 USB 並切至有線模式，再按「重新讀取」。設定、備份與診斷存在 `%LOCALAPPDATA%\iLovbeeStudio`，不會自動上傳。
+The installer copies the app to `%LOCALAPPDATA%\Programs\iLovbee Studio`, adds a Start menu shortcut, and registers it under Windows **Installed apps**. It needs no administrator rights and does not need the vendor software.
 
-## 驗證
+### Uninstall
+
+Uninstall from Windows Settings → Apps, or run `uninstall.ps1` in the install folder. Settings and backups in `%LOCALAPPDATA%\iLovbeeStudio` are kept.
+
+## Usage
+
+1. **Quit the vendor iLovbee app first.** Two programs writing to the keyboard overwrite each other, so iLovbee Studio refuses to write while the vendor driver is running.
+2. Connect the keyboard by USB and switch it to wired mode.
+3. Launch **iLovbee Studio** and click **重新讀取** (Reload) to read the keyboard.
+
+Closing the window keeps the app in the system tray (about 20 MB). Use **結束小工具** (Exit) in the tray menu to quit. The tray menu can also toggle the music and custom lighting, and turn **開機自動啟動** (Start with Windows) on or off.
+
+Custom lighting and the music visualizer are streamed frame by frame from the tray app. They only run while the app is running. When you stop them, the keyboard returns to its previous lighting mode.
+
+## How it works
+
+```
+┌──────────────────────┐   HID feature report 6 (520 bytes)   ┌──────────┐
+│ iLovbeeStudio.exe    │ ───────────────────────────────────▶ │ B87      │
+│  · tray + live loop  │   keymaps · lighting · colour table   │ firmware │
+│  · localhost server  │   macros · live LED frames            └──────────┘
+└─────────┬────────────┘
+          │ http://127.0.0.1:<random port>
+┌─────────▼────────────┐
+│ iLovbeeUI.exe (Tauri)│  or an Edge app window
+└──────────────────────┘
+```
+
+The full protocol notes are in [`docs/firmware.md`](docs/firmware.md): commands, payload offsets, the 0x0a colour table and live frames. Feature parity with the vendor app is tracked in [`docs/parity.md`](docs/parity.md).
+
+### Project layout
+
+| Path | Contents |
+|---|---|
+| `src/` | Device protocol, HID access, codecs and lighting engine (shared with tests) |
+| `app/` | Tray app, local HTTP API and web UI (`app/web/`) |
+| `ui/` | Optional Tauri 2 window shell |
+| `tests/` | Self-checking test runner |
+| `scripts/` | Per-user install and uninstall scripts |
+| `docs/` | Protocol research and parity notes |
+
+## Safety
+
+Hardware writes are deliberately conservative:
+
+- **Backup → write → read back → roll back on mismatch.** Writes the keyboard cannot read back are backed up beforehand. These are macros and the colour table; the colour table is also saved locally.
+- Only known commands with exact lengths are allowed. The app never sends firmware-update, ISP or DFU commands.
+- The FN key cannot be remapped away.
+
+The local web UI listens only on `127.0.0.1` on a random port. It requires a one-time token issued at startup (an HttpOnly, SameSite=Strict cookie) and checks the `Host` and `Origin` headers, so other websites cannot call it.
+
+## Development
 
 ```powershell
 dotnet run --project tests/Checks.csproj -c Release
-# 選用：讀取實際裝置，結果只存本機，包含裝置路徑與設定內容
-dotnet run --project tests/Checks.csproj -c Release -- --probe C:\path\probe.json
 ```
 
-測試涵蓋封包長度與標頭、設定檔硬體／層數／長度限制、按鍵編碼。實際裝置 probe 只使用設定查詢，沒有韌體 dump 或刷寫。
+The tests cover:
 
-`--hardware-smoke` 是選用的實機測試，會暫時將兩層的小算盤位置改為 F13，再於 finally 還原完整映射；執行前必須連接相容硬體並結束其他設定程式。不要把它當成唯讀 probe。
+- packet headers and length limits
+- profile validation
+- key and macro encoding, checked against packets captured from the vendor app
+- the colour table
+- per-key effects and the music visualizer
 
-`iLovbeeStudio.WinUI.exe --ui-check C:\path\captures` 使用程式內版面檢查與 RenderTargetBitmap，檢查五頁與兩種桌面寬度後退出，不操作使用者的滑鼠或鍵盤。
+`build.ps1` runs the tests before every publish.
 
-## 範圍
+## Limitations
 
-這是獨立編寫的個人工具，不隸屬 iLovbee。未散布原廠執行檔、韌體、使用者設定或裝置診斷。尚未修改藍牙韌體；目前不能宣稱已改善藍牙穩定性。
+- **The side-light colour cannot be changed.** No command for it has been found, and the vendor app has no such setting either.
+- The lighting previews are software simulations, and a few modes differ slightly from the hardware.
+- Battery level is the last value Windows reported over Bluetooth, so the keyboard must be paired at least once.
+- Bluetooth firmware is untouched, so this project makes no claim of improving wireless stability.
+
+## Disclaimer
+
+This is an independent personal project. It is not affiliated with or endorsed by iLovbee or BY Tech. No vendor executables, firmware or user data are distributed. You use it at your own risk, although every write is backed up and verified.
+
+## License
+
+No license has been chosen yet. Until one is added, all rights are reserved by the author.

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><RuntimeIdentifier>win-x64</RuntimeIdentifier><PublishAot>true</PublishAot><SelfContained>true</SelfContained><AllowUnsafeBlocks>true</AllowUnsafeBlocks><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><TreatWarningsAsErrors>true</TreatWarningsAsErrors><EnableNETAnalyzers>true</EnableNETAnalyzers><AssemblyName>iLovbeeStudio</AssemblyName><ApplicationIcon>web/app.ico</ApplicationIcon><Version>0.6.0</Version><ApplicationManifest>app.manifest</ApplicationManifest><InvariantGlobalization>true</InvariantGlobalization><DebugType>none</DebugType><DebugSymbols>false</DebugSymbols><OptimizationPreference>Size</OptimizationPreference><StackTraceSupport>false</StackTraceSupport>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="../src/WindowsBattery.cs" Link="WindowsBattery.cs" /><Compile Include="../src/Hardware.cs" Link="Hardware.cs" /><Compile Include="../src/LedFrame.cs" Link="LedFrame.cs" /><Compile Include="../src/AudioLoopback.cs" Link="AudioLoopback.cs" /><Compile Include="../src/LiveConfig.cs" Link="LiveConfig.cs" /><Compile Include="../src/AppJson.cs" Link="AppJson.cs" /><Compile Include="../src/KeyActions.cs" Link="KeyActions.cs" /><Compile Include="../src/MappingEditor.cs" Link="MappingEditor.cs" /><Compile Include="../src/Macros.cs" Link="Macros.cs" /><Compile Include="../src/Schemes.cs" Link="Schemes.cs" /><Compile Include="../src/LightLayouts.cs" Link="LightLayouts.cs" />  <EmbeddedResource Include="../src/keyboard.json" LogicalName="keyboard.json" />
+    <EmbeddedResource Include="web/*" LogicalName="web.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+[package]
+name = "ilovbee-ui"
+version = "0.7.0"
+edition = "2021"
+description = "iLovbee Studio 設定視窗（Tauri 外殼，內容由常駐程式提供）"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+window-vibrancy = "0.6"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

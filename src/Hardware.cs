@@ -18,24 +18,24 @@ public sealed record DeviceProfile(int Schema, string Device, string Release, Da
 public sealed record PhysicalKey(int Id, string Name, double X, double Y, double Width, double Height, int Slot);
 public static class Store {
     public static readonly string Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "iLovbeeStudio");
-    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    public static readonly JsonSerializerOptions Json = new() { WriteIndented = true };   // 僅供非 AOT 的診斷用途；AOT 一律使用 AppJson
     public static string Write<T>(string directory, string name, T value) {
         string folder = Path.Combine(Root, directory); Directory.CreateDirectory(folder);
         string file = Path.Combine(folder, name);
         string temp = file + ".tmp-" + Guid.NewGuid().ToString("N");
-        try { File.WriteAllText(temp, JsonSerializer.Serialize(value, Json), Encoding.UTF8); File.Move(temp, file, true); }
+        try { File.WriteAllText(temp, JsonSerializer.Serialize(value, (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)(AppJson.Default.GetTypeInfo(typeof(T)) ?? throw new NotSupportedException(typeof(T).Name))), Encoding.UTF8); File.Move(temp, file, true); }
         finally { if (File.Exists(temp)) File.Delete(temp); }
         return file;
     }
     public static DeviceProfile Load(string path) {
         if (new FileInfo(path).Length > 65536) throw new InvalidDataException("設定檔超過大小上限。");
-        var profile = JsonSerializer.Deserialize<DeviceProfile>(File.ReadAllText(path), Json) ?? throw new InvalidDataException("無效的設定檔。");
+        var profile = JsonSerializer.Deserialize(File.ReadAllText(path), AppJson.Default.DeviceProfile) ?? throw new InvalidDataException("無效的設定檔。");
         Validate(profile); return profile;
     }
     public static void Validate(DeviceProfile profile) {
         if (profile.Schema != 1 || profile.Device != "258A:0199" || profile.Release != "2010")
             throw new InvalidDataException("此設定檔不適用目前 B87 硬體版本。");
-        if (profile.Keymaps is null || profile.Keymaps.Count != 3 || !Enumerable.Range(0,3).All(profile.Keymaps.ContainsKey))
+        if (profile.Keymaps is null || profile.Keymaps.Count is not (3 or 4) || !Enumerable.Range(0,profile.Keymaps.Count).All(profile.Keymaps.ContainsKey))
             throw new InvalidDataException("設定檔必須包含完整三層按鍵映射。");
         foreach (var map in profile.Keymaps) {
             if (map.Value is null || map.Value.Length != 832 || Convert.FromHexString(map.Value).Length != 416)
@@ -67,6 +67,15 @@ public static class NativeHid {
     [DllImport("hid.dll")] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_GetManufacturerString(SafeFileHandle h,byte[] value,int size);
     [DllImport("hid.dll",SetLastError=true)] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_SetFeature(SafeFileHandle h,byte[] value,int size);
     [DllImport("hid.dll",SetLastError=true)] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_GetFeature(SafeFileHandle h,byte[] value,int size);
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+    /// <summary>寫入設定前先等所有鍵盤按鍵放開（最多 maxMs），避免設定封包與按鍵放開訊號重疊，造成最後一個鍵被重複送出。</summary>
+    public static void WaitKeysIdle(int maxMs=1500) {
+        var clock=System.Diagnostics.Stopwatch.StartNew();int quiet=0;
+        while(clock.ElapsedMilliseconds<maxMs) {
+            bool down=false;for(int k=8;k<0xFF && !down;k++)if(k is not (0x10 or 0x11 or 0x12) && (GetAsyncKeyState(k)&0x8000)!=0)down=true;
+            quiet=down?0:quiet+10;if(quiet>=150)return;Thread.Sleep(10);
+        }
+    }
     public static List<DeviceInfo> Enumerate() {
         HidD_GetHidGuid(out Guid guid); IntPtr set = SetupDiGetClassDevsW(ref guid,null,IntPtr.Zero,0x12);
         if (set == new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -121,11 +130,11 @@ public static class NativeHid {
         return reply.AsSpan(8,count).ToArray();
     }
     public static void Write(SafeFileHandle h,byte command,byte layer,byte[] data) {
-        if(!((command==3 && data.Length==416 && layer<=2) || (command==4 && data.Length==128 && layer==0)))
+        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512) || (command==8 && layer==0 && data.Length==LedFrame.Bytes) || (command==0x0a && layer==0 && data.Length==ColorTable.Bytes)))
             throw new InvalidOperationException("未允許的設定寫入。");
         byte[] b=Packet(command,layer,data.Length);data.CopyTo(b,8);
         if(!HidD_SetFeature(h,b,b.Length)) throw new Win32Exception(Marshal.GetLastWin32Error(),"寫入失敗；備份仍保留。");
-        Thread.Sleep(80);
+        Thread.Sleep(command switch{5=>200,8=>0,_=>80});
     }
 }
 public sealed class KeyboardService {
@@ -143,18 +152,25 @@ public sealed class KeyboardService {
         return NativeHid.Open(device.Path);
     }
     public byte[] ReadMap(int layer) {
-        if(layer<0 || layer>2)throw new ArgumentOutOfRangeException(nameof(layer));
+        if(layer<0 || layer>3)throw new ArgumentOutOfRangeException(nameof(layer));
         lock(gate) { using var h=Open();return NativeHid.Read(h,0x83,(byte)layer,416); }
     }
     public byte[] ReadLights() { lock(gate){using var h=Open();return NativeHid.Read(h,0x84,0,128);} }
     public PowerInfo ReadPower() { lock(gate){using var h=Open();var b=NativeHid.Read(h,0x87,0,2);return new(b[0],b[1],DateTimeOffset.Now);} }
     public DeviceProfile Capture() {
         lock(gate) {
-            var maps=Enumerable.Range(0,3).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
+            var maps=Enumerable.Range(0,4).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
             return new(1,"258A:0199","2010",DateTimeOffset.Now,maps,Convert.ToHexString(ReadLights()));
         }
     }
-    public string Backup(string purpose) => Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
+    const int KeepBackups=60;
+    public string Backup(string purpose) {
+        string file=Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
+        // 自動備份只保留最新的 KeepBackups 份；手動備份（-manual）不刪。
+        try{foreach(var old in Directory.GetFiles(Path.GetDirectoryName(file)!,"*.json").Where(f=>!f.EndsWith("-manual.json")).OrderDescending().Skip(KeepBackups))File.Delete(old);}
+        catch(IOException){}catch(UnauthorizedAccessException){}
+        return file;
+    }
     public static void CheckConflict() {
         foreach(var p in System.Diagnostics.Process.GetProcessesByName("DeviceDriver")) {
             using(p) {
@@ -168,7 +184,7 @@ public sealed class KeyboardService {
         MappingEditor.Validate(expected);MappingEditor.Validate(desired);
         foreach(int layer in expected.Keys)if(!expected[layer].AsSpan(59*4,4).SequenceEqual(desired[layer].AsSpan(59*4,4)))throw new ArgumentException("FN 鍵必須保留。");
         lock(gate){
-            CheckConflict();var before=Capture();
+            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();
             if(expected.Any(p=>!Convert.FromHexString(before.Keymaps[p.Key]).SequenceEqual(p.Value)))throw new IOException("鍵盤設定已變更。請先匯出草稿，再重新讀取鍵盤。");
             var changed=expected.Keys.Where(i=>!expected[i].SequenceEqual(desired[i])).Order().ToArray();if(changed.Length==0)return;
             Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-keymaps.json",before);
@@ -184,9 +200,9 @@ public sealed class KeyboardService {
         }
     }
     public void Remap(int layer,int slot,byte[] expected,byte[] action) {
-        if(layer<0 || layer>2 || slot<0 || slot>=104 || action.Length!=4 || expected.Length!=416) throw new ArgumentException("無效的按鍵映射。");
+        if(layer<0 || layer>3 || slot<0 || slot>=104 || action.Length!=4 || expected.Length!=416) throw new ArgumentException("無效的按鍵映射。");
         lock(gate) {
-            CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x83,(byte)layer,416);
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x83,(byte)layer,416);
             if(!before.SequenceEqual(expected)) throw new IOException("鍵盤設定已在其他地方變更。請重新讀取後再套用。");
             Backup("before-keymap");
             var after=(byte[])before.Clone();action.CopyTo(after,slot*4);
@@ -201,10 +217,25 @@ public sealed class KeyboardService {
             }
         }
     }
+    /// <summary>寫入巨集緩衝區（指令 5）。原廠流程不讀回巨集，因此此處無法讀回驗證；先備份，且需在按鍵指向巨集之前寫入。</summary>
+    public void WriteMacros(byte[] buffer) {
+        if(buffer.Length<4 || buffer.Length>MacroCodec.MaxBytes) throw new ArgumentException("無效的巨集資料。");
+        lock(gate) { NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();Backup("before-macro");NativeHid.Write(h,5,0,buffer); }
+    }
+    /// <summary>送出一格即時燈效（指令 8，僅在燈效模式 18 時顯示）。不寫入設定，因此不備份。</summary>
+    public void SendFrame(byte[] rgb) { lock(gate){using var h=Open();NativeHid.Write(h,8,0,rgb);} }
+    /// <summary>設定某模式色票第 0 格（原廠的「自訂 RGB」）。指令 0x0a 沒有讀取指令，所以以本機保存的表為準整張送出。</summary>
+    public void SetCustomColor(int mode,byte[] rgb) {
+        lock(gate) {
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();
+            var table=ColorTable.Load();ColorTable.SetCustom(table,mode,rgb);
+            NativeHid.Write(h,0x0a,0,table);ColorTable.Save(table);
+        }
+    }
     public void SetLights(byte[] expected,byte[] after) {
         if(expected.Length!=128 || after.Length!=128) throw new ArgumentException("無效的燈效設定。");
         lock(gate) {
-            CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x84,0,128);
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x84,0,128);
             if(!before.SequenceEqual(expected)) throw new IOException("燈效設定已變更，請重新讀取。");
             Backup("before-lighting");
             try {
@@ -220,7 +251,7 @@ public sealed class KeyboardService {
     public void Restore(DeviceProfile profile) {
         Store.Validate(profile);
         lock(gate) {
-            CheckConflict();var before=Capture();Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-restore.json",before);
+            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-restore.json",before);
             void Apply(DeviceProfile p) {
                 using var h=Open();
                 foreach(var layer in p.Keymaps.OrderBy(x=>x.Key)) {
@@ -236,5 +267,26 @@ public sealed class KeyboardService {
                 throw new IOException("還原失敗，已回復還原前設定。",original);
             }
         }
+    }
+}
+/// <summary>
+/// 燈效色票表（指令 0x0a，420 bytes）：20 個模式 × 7 色 × RGB，列索引同 payload[10]。
+/// payload 顏色索引 0..6 取該模式這一列的第 0..6 格；第 0 格就是原廠色輪的「自訂 RGB」（預設紅）。
+/// </summary>
+public static class ColorTable {
+    public const int Modes=20,Slots=7,Bytes=Modes*Slots*3;
+    static readonly byte[] Standard=Convert.FromHexString("FF000000FF000000FFFFFF00FF00FF00FFFFFFFFFF");   // 原廠預設：紅綠藍黃紫青白
+    static string FilePath=>Path.Combine(Store.Root,"colortable.hex");
+    public static byte[] Default(){var t=new byte[Bytes];for(int m=1;m<Modes;m++)Standard.CopyTo(t,m*Slots*3);return t;}
+    public static byte[] Load(){
+        try{var t=Convert.FromHexString(File.ReadAllText(FilePath).Trim());if(t.Length==Bytes)return t;}
+        catch(Exception e)when(e is IOException or FormatException){}
+        return Default();
+    }
+    public static void Save(byte[] t){Directory.CreateDirectory(Store.Root);File.WriteAllText(FilePath,Convert.ToHexString(t));}
+    public static byte[] Custom(byte[] t,int mode)=>t.AsSpan(mode*Slots*3,3).ToArray();
+    public static void SetCustom(byte[] t,int mode,byte[] rgb){
+        if(mode<1||mode>=Modes||rgb.Length!=3)throw new ArgumentException("無效的自訂顏色。");
+        rgb.CopyTo(t,mode*Slots*3);
     }
 }

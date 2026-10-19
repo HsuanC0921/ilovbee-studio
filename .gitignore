@@ -9,3 +9,6 @@ device-backups/
 diagnostics/
 *.pdb
 last-error.txt
+ui/target/
+work/
+ui/gen/

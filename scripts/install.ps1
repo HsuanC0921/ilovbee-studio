@@ -2,16 +2,14 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $projectRoot 'dist'
-$mainExeName = 'iLovbeeStudio.WinUI.exe'
-$widgetExeName = 'iLovbeeWidget.exe'
+$mainExeName = 'iLovbeeStudio.exe'
 $mainExe = Join-Path $source $mainExeName
-$widgetExe = Join-Path $source $widgetExeName
-if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf) -or -not (Test-Path -LiteralPath $widgetExe -PathType Leaf)) {
+if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) {
     throw '發佈檔不完整。請先執行 build.ps1，再執行安裝。'
 }
 
-$running = Get-Process -Name 'iLovbeeStudio.WinUI', 'iLovbeeWidget' -ErrorAction SilentlyContinue
-if ($running) { throw '請先關閉 iLovbee Studio 與系統匣小工具，再重新安裝。' }
+$running = Get-Process -Name 'iLovbeeStudio', 'iLovbeeStudio.WinUI', 'iLovbeeWidget' -ErrorAction SilentlyContinue
+if ($running) { throw '請先從系統匣結束 iLovbee Studio，再重新安裝。' }
 
 $programs = Join-Path $env:LOCALAPPDATA 'Programs'
 $installRoot = Join-Path $programs 'iLovbee Studio'
@@ -21,7 +19,7 @@ $productId = 'HsuanC0921.iLovbeeStudio'
 $stagingRoot = Join-Path $programs ('iLovbee Studio.installing-' + [guid]::NewGuid().ToString('N'))
 $oldRoot = Join-Path $programs ('iLovbee Studio.previous-' + [guid]::NewGuid().ToString('N'))
 $version = '0.3.4'
-$projectFile = Join-Path $projectRoot 'src\iLovbeeStudio.csproj'
+$projectFile = Join-Path $projectRoot 'app\iLovbeeStudio.csproj'
 if (Test-Path -LiteralPath $projectFile) {
     $match = [regex]::Match((Get-Content -LiteralPath $projectFile -Raw), '<Version>([^<]+)</Version>')
     if ($match.Success) { $version = $match.Groups[1].Value }
@@ -52,9 +50,9 @@ try {
     $shortcutFolder = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\iLovbee Studio'
     New-Item -ItemType Directory -Path $shortcutFolder -Force | Out-Null
     $shell = New-Object -ComObject WScript.Shell
+    Remove-Item -LiteralPath (Join-Path $shortcutFolder 'iLovbee 電量小工具.lnk') -Force -ErrorAction SilentlyContinue
     foreach ($shortcut in @(
-        @{ Name = 'iLovbee Studio'; Target = (Join-Path $appRoot $mainExeName); Description = '設定與管理 iLovbee B87 鍵盤' },
-        @{ Name = 'iLovbee 電量小工具'; Target = (Join-Path $appRoot $widgetExeName); Description = '在系統匣查看 B87 電量' }
+        @{ Name = 'iLovbee Studio'; Target = (Join-Path $appRoot $mainExeName); Description = '設定與管理 iLovbee B87 鍵盤' }
     )) {
         $link = $shell.CreateShortcut((Join-Path $shortcutFolder ($shortcut.Name + '.lnk')))
         $link.TargetPath = $shortcut.Target
@@ -86,7 +84,7 @@ try {
         }
     }
     Write-Output "已安裝 iLovbee Studio $version：$installRoot"
-    Write-Output '開始功能表已新增「iLovbee Studio」與「iLovbee 電量小工具」。'
+    Write-Output '開始功能表已新增「iLovbee Studio」；常駐系統匣，可在托盤選單設定開機自動啟動。'
 } catch {
     if ($movedOld -and -not (Test-Path -LiteralPath $installRoot) -and (Test-Path -LiteralPath $oldRoot)) {
         Move-Item -LiteralPath $oldRoot -Destination $installRoot
