@@ -26,7 +26,7 @@ public sealed partial class MainWindow {
                     bool keyCount=name!="按鍵重設" || buttons.Count==87;
                     bool state=name!="按鍵重設" || applyButton?.IsEnabled==(service.Current!=null && editor.ChangeCount>0);
                     results.Add(new{Width=width,Page=name,Rendered=rendered,KeyCountValid=keyCount,ApplyStateValid=state,Battery=battery.Latest?.Percent});passed&=rendered&&keyCount&&state;
-                    if(name=="按鍵重設")await Capture(root,Path.Combine(folder,$"desktop-{width}.png"));
+                    if(name is "按鍵重設" or "燈效")await Capture(root,Path.Combine(folder,$"{(name=="燈效"?"lighting":"desktop")}-{width}.png"));
                 }
             }
             File.WriteAllText(Path.Combine(folder,"ui-check.json"),JsonSerializer.Serialize(new{Passed=passed,Checks=results},Store.Json));

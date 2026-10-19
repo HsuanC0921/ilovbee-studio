@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,12 +31,12 @@ public sealed partial class MainWindow : Window {
     readonly List<KeyAction> shortcutKeys=KeyActions.All().Where(a=>a.Bytes[0]==0 && a.Bytes[1]==0 && a.Bytes[2]==0 && a.Bytes[3]!=0).DistinctBy(a=>Convert.ToHexString(a.Bytes)).ToList();
     readonly StackPanel body=new(){Spacing=20,Margin=new Thickness(32,24,32,24)};
     readonly Grid shell=new();
-    readonly StackPanel sidebar=new(){Background=Surface};
+    readonly StackPanel sidebar=new(){Background=Brush("#EEF1F5")};
     readonly Dictionary<string,Button> navigationButtons=new();
     readonly Dictionary<string,(TextBlock Label,SymbolIcon Icon)> navigationItems=new();
     readonly TextBlock footer=T("就緒",12,Muted);
     readonly InfoBar info=new(){IsOpen=false,IsClosable=false,Severity=InfoBarSeverity.Informational,Message="準備讀取鍵盤……"};
-    readonly TextBlock device=T("B87 · 讀取中",14),powerLabel=T("",12,Muted);
+    readonly TextBlock device=new(){Text="B87 · 讀取中",FontSize=16,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink},powerLabel=T("",12,Muted);
     readonly DispatcherTimer timer=new(){Interval=TimeSpan.FromSeconds(30)};
     readonly Dictionary<int,byte[]> maps=new();
     readonly Dictionary<int,Button> buttons=new();
@@ -56,9 +56,10 @@ public sealed partial class MainWindow : Window {
     string page="按鍵重設";
     bool busy,closing,resumed;
     DateTimeOffset lastPower;
+    DispatcherTimer? lightTimer;
     public MainWindow() {
         var arguments=Environment.GetCommandLineArgs();
-        Title="iLovbee Studio";
+        Title="iLovbee Studio";AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory,"assets","app.ico"));
         ExtendsContentIntoTitleBar=true;
         keys=JsonSerializer.Deserialize<List<PhysicalKey>>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"keyboard.json")))??new();
         selected=keys.FirstOrDefault(k=>k.Id==88);
@@ -66,7 +67,7 @@ public sealed partial class MainWindow : Window {
         root.RowDefinitions.Add(new(){Height=new GridLength(48)});root.RowDefinitions.Add(new(){Height=new GridLength(1,GridUnitType.Star)});
         var titleBar=new Grid{Height=48,Background=Surface,Padding=new Thickness(20,0,150,0)};
         var titleLine=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};
-        var mark=new Border{Width=24,Height=24,CornerRadius=new CornerRadius(5),Background=Blue,Child=new SymbolIcon(Symbol.Keyboard){Foreground=new SolidColorBrush(Colors.White)}};
+        var mark=new Microsoft.UI.Xaml.Controls.Image{Width=26,Height=26,Source=new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory,"assets","logo.png")))};
         titleLine.Children.Add(mark);titleLine.Children.Add(new TextBlock{Text="iLovbee Studio",FontSize=14,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,VerticalAlignment=VerticalAlignment.Center});
         titleBar.Children.Add(titleLine);
         root.Children.Add(titleBar);SetTitleBar(titleBar);
@@ -77,7 +78,7 @@ public sealed partial class MainWindow : Window {
         AppWindow.TitleBar.ButtonInactiveForegroundColor=ColorHelper.FromArgb(255,85,96,109);
         AppWindow.TitleBar.ButtonHoverBackgroundColor=ColorHelper.FromArgb(255,227,231,237);
         titleBar.SizeChanged+=(_,_)=>titleBar.Padding=new Thickness(20,0,AppWindow.TitleBar.RightInset/(titleBar.XamlRoot?.RasterizationScale??1)+16,0);
-        var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=4};brand.Children.Add(T("B87",28));brand.Children.Add(T("鍵盤設定",12,Muted));sidebar.Children.Add(brand);
+        var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=12};var brandText=new StackPanel{Spacing=2};brandText.Children.Add(new TextBlock{Text="B87",FontSize=22,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink});brandText.Children.Add(T("鍵盤設定",12,Muted));brand.Children.Add(brandText);sidebar.Children.Add(brand);
         var names=new[]{("按鍵重設",Symbol.Keyboard),("燈效",Symbol.Highlight),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
         foreach(var n in names){
             var icon=new SymbolIcon(n.Item2){Foreground=Muted,Width=18,Height=18};var label=T(n.Item1,14,Ink);
@@ -111,7 +112,7 @@ public sealed partial class MainWindow : Window {
                 info.Title="啟動未完成";info.Severity=InfoBarSeverity.Error;
                 info.Message="程式已開啟，但初始化未完成。錯誤記錄已儲存至本機設定資料夾。";info.IsOpen=true;
             }
-        };Closed+=(_,_)=>{closing=true;timer.Stop();};
+        };Closed+=(_,_)=>{closing=true;timer.Stop();lightTimer?.Stop();};
         test.KeyDown+=TestDown;test.KeyUp+=TestUp;test.LostFocus+=(_,_)=>pressed.Clear();
     }
     static SolidColorBrush Brush(string hex)=>new(ColorHelper.FromArgb(255,Convert.ToByte(hex.Substring(1,2),16),Convert.ToByte(hex.Substring(3,2),16),Convert.ToByte(hex.Substring(5,2),16)));
@@ -144,9 +145,9 @@ public sealed partial class MainWindow : Window {
         Message(service.Current!=null?"鍵盤已連線。":"鍵盤未連線，請使用 USB 連接以編輯設定。");
     });
     void UpdateNavigation(){
-        foreach(var pair in navigationButtons){bool active=pair.Key==page;pair.Value.Background=active?Blue:new SolidColorBrush(Colors.Transparent);pair.Value.Foreground=active?new SolidColorBrush(Colors.White):Ink;pair.Value.BorderBrush=active?Blue:new SolidColorBrush(Colors.Transparent);pair.Value.BorderThickness=new Thickness(active?1:0);var visual=navigationItems[pair.Key];visual.Label.Foreground=active?new SolidColorBrush(Colors.White):Ink;visual.Icon.Foreground=active?new SolidColorBrush(Colors.White):Muted;}
+        foreach(var pair in navigationButtons){bool active=pair.Key==page;pair.Value.Background=active?Brush("#DCEAFF"):new SolidColorBrush(Colors.Transparent);pair.Value.Foreground=active?Blue:Ink;var visual=navigationItems[pair.Key];visual.Label.Foreground=active?Blue:Ink;visual.Label.FontWeight=active?Microsoft.UI.Text.FontWeights.SemiBold:Microsoft.UI.Text.FontWeights.Normal;visual.Icon.Foreground=active?Blue:Muted;}
     }
-    void Navigate(string name){page=name;switch(name){case "按鍵重設":RemapPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
+    void Navigate(string name){lightTimer?.Stop();page=name;switch(name){case "按鍵重設":RemapPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
     void RemapPage(){
         Heading("按鍵重設","自訂按鍵、媒體控制與組合快捷鍵。");
         body.Children.RemoveAt(1);body.Spacing=12;body.Margin=new Thickness(32,16,32,16);
@@ -242,31 +243,6 @@ public sealed partial class MainWindow : Window {
     static Border Chip(string text)=>new(){Background=Brush("#E3E7ED"),CornerRadius=new CornerRadius(5),Padding=new Thickness(8,3,8,3),Child=new TextBlock{Text=text,FontSize=12,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink}};
     static TextBlock Sub(string text)=>new(){Text=text,FontSize=16,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink};
     static StackPanel Row(params UIElement[] items){var row=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};foreach(var item in items)row.Children.Add(item);return row;}
-    void LightingPage(){
-        Heading("燈效","選擇主背光模式，套用前會重新讀取鍵盤狀態。");
-        string[] modes={"關閉主背光","恆亮","呼吸","夢幻彩虹","一觸即發","雨中漫步","彩虹輪盤","漣漪擴散","繁星閃爍","踏雪無痕","流動貪食蛇","霓虹流動","如影隨形","正弦光波","左右掃描","旋轉風車","七彩瀑布","花開富貴","自訂燈效"};
-        int current=lights!=null && lights[10]<modes.Length?lights[10]:-1;
-        var grid=new GridView{SelectionMode=ListViewSelectionMode.Single,IsEnabled=lights!=null,Margin=new Thickness(-4,0,-4,0)};AutomationProperties.SetName(grid,"主背光模式");
-        foreach(var m in modes)grid.Items.Add(new TextBlock{Text=m,FontSize=14,Margin=new Thickness(10,8,10,8)});
-        grid.SelectedIndex=current;
-        var status=T("",12,Muted);var apply=B("套用燈效",()=>{});apply.Style=(Style)Application.Current.Resources["AccentButtonStyle"];
-        void Sync(){
-            apply.IsEnabled=!busy && lights!=null && grid.SelectedIndex>=0 && grid.SelectedIndex!=current;
-            status.Text=lights==null?"請先連接 USB 並讀取鍵盤。":grid.SelectedIndex>=0 && grid.SelectedIndex!=current?$"目前：{(current>=0?modes[current]:"未知")} → 待套用：{modes[grid.SelectedIndex]}":$"目前：{(current>=0?modes[current]:"未知")}";
-        }
-        grid.SelectionChanged+=(_,_)=>Sync();Sync();
-        apply.Click+=async(_,_)=>await Run("正在讀取並套用燈效……",async()=>{
-            if(lights==null || grid.SelectedIndex<0)throw new InvalidOperationException("請先讀取鍵盤並選擇燈效。");
-            var before=await Task.Run(()=>service.ReadLights());
-            var after=(byte[])before.Clone();after[10]=(byte)grid.SelectedIndex;
-            if(after.SequenceEqual(before)){lights=before;current=grid.SelectedIndex;Sync();Message("鍵盤目前已使用此模式。");return;}
-            await Task.Run(()=>service.SetLights(before,after));lights=after;current=grid.SelectedIndex;Sync();Message("燈效已套用並完成讀回核對。");
-        });
-        var mode=new StackPanel{Spacing=16};mode.Children.Add(Sub("主背光模式"));mode.Children.Add(grid);mode.Children.Add(Row(apply,status));body.Children.Add(Card(mode));
-        var keysCard=new StackPanel{Spacing=12};keysCard.Children.Add(Sub("鍵盤快捷鍵"));
-        keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Scroll Lock"),T("切換主背光效果",14,Muted)));
-        keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Backspace"),T("切換整體 RGB 燈光（含側燈）",14,Muted)));body.Children.Add(Card(keysCard));
-    }
     void PowerPage(){
         Heading("裝置狀態","檢視鍵盤連線與電量資訊。");
         bool usb=service.Current!=null;
