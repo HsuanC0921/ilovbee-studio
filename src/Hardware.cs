@@ -163,13 +163,19 @@ public sealed class KeyboardService {
             return new(1,"258A:0199","2010",DateTimeOffset.Now,maps,Convert.ToHexString(ReadLights()));
         }
     }
-    const int KeepBackups=60;
-    public string Backup(string purpose) {
-        string file=Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
-        // 自動備份只保留最新的 KeepBackups 份；手動備份（-manual）不刪。
-        try{foreach(var old in Directory.GetFiles(Path.GetDirectoryName(file)!,"*.json").Where(f=>!f.EndsWith("-manual.json")).OrderDescending().Skip(KeepBackups))File.Delete(old);}
-        catch(IOException){}catch(UnauthorizedAccessException){}
-        return file;
+    /// <summary>建立備份並依設定刪掉多的舊檔。purpose 為 "manual" 是手動備份；自動備份關閉時其餘一律略過並回傳 null。
+    /// 寫入失敗的還原用的是記憶體中的寫入前資料，不依賴這些檔案。</summary>
+    public string? Backup(string purpose,DeviceProfile? snapshot=null) {
+        var s=BackupSettings.Load();
+        if(purpose!="manual" && !s.Auto)return null;
+        string file=Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",snapshot??Capture());
+        Prune(s);return file;
+    }
+    public static void Prune(BackupSettings s) {
+        try{
+            var all=Directory.GetFiles(Path.Combine(Store.Root,"backups"),"*.json").OrderDescending().ToList();
+            foreach(var old in all.Where(BackupSettings.IsManual).Skip(s.KeepManual).Concat(all.Where(f=>!BackupSettings.IsManual(f)).Skip(s.KeepAuto)))File.Delete(old);
+        }catch(IOException){}catch(UnauthorizedAccessException){}
     }
     public static void CheckConflict() {
         foreach(var p in System.Diagnostics.Process.GetProcessesByName("DeviceDriver")) {
@@ -187,7 +193,7 @@ public sealed class KeyboardService {
             NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();
             if(expected.Any(p=>!Convert.FromHexString(before.Keymaps[p.Key]).SequenceEqual(p.Value)))throw new IOException("鍵盤設定已變更。請先匯出草稿，再重新讀取鍵盤。");
             var changed=expected.Keys.Where(i=>!expected[i].SequenceEqual(desired[i])).Order().ToArray();if(changed.Length==0)return;
-            Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-keymaps.json",before);
+            Backup("before-keymaps",before);
             using var h=Open();var attempted=new List<int>();
             try{
                 foreach(int layer in changed){attempted.Add(layer);NativeHid.Write(h,3,(byte)layer,desired[layer]);if(!NativeHid.Read(h,0x83,(byte)layer,416).SequenceEqual(desired[layer]))throw new IOException("按鍵設定讀回不符。");}
@@ -251,7 +257,7 @@ public sealed class KeyboardService {
     public void Restore(DeviceProfile profile) {
         Store.Validate(profile);
         lock(gate) {
-            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-restore.json",before);
+            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();Backup("before-restore",before);
             void Apply(DeviceProfile p) {
                 using var h=Open();
                 foreach(var layer in p.Keymaps.OrderBy(x=>x.Key)) {
@@ -289,4 +295,26 @@ public static class ColorTable {
         if(mode<1||mode>=Modes||rgb.Length!=3)throw new ArgumentException("無效的自訂顏色。");
         rgb.CopyTo(t,mode*Slots*3);
     }
+}
+
+/// <summary>備份設定（backup.ini）：Auto＝寫入前自動備份；KeepAuto／KeepManual＝自動、手動備份各保留最新幾份。</summary>
+public sealed class BackupSettings {
+    public const int MaxKeep=100;
+    public bool Auto=true;
+    public int KeepAuto=5,KeepManual=5;
+    static string FilePath=>Path.Combine(Store.Root,"backup.ini");
+    public static bool IsManual(string file)=>file.EndsWith("-manual.json",StringComparison.OrdinalIgnoreCase);
+    public static BackupSettings Load(){
+        var s=new BackupSettings();
+        try{
+            foreach(var line in File.ReadAllLines(FilePath)){
+                int i=line.IndexOf('=');if(i<1)continue;string k=line[..i].Trim(),v=line[(i+1)..].Trim();
+                if(k=="auto")s.Auto=v!="0";
+                else if(k=="keepauto"&&int.TryParse(v,out int a))s.KeepAuto=Math.Clamp(a,1,MaxKeep);
+                else if(k=="keepmanual"&&int.TryParse(v,out int m))s.KeepManual=Math.Clamp(m,1,MaxKeep);
+            }
+        }catch(IOException){}
+        return s;
+    }
+    public void Save(){Directory.CreateDirectory(Store.Root);File.WriteAllLines(FilePath,new[]{"auto="+(Auto?1:0),"keepauto="+KeepAuto,"keepmanual="+KeepManual});}
 }
