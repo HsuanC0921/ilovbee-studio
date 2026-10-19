@@ -55,5 +55,12 @@ Check(Convert.ToHexString(MacroCodec.KeyCode(1))=="03010101","macro key code");
 Reject(()=>MacroCodec.Validate(new[]{Mac("",(4,false,0))}),"empty macro name");
 Reject(()=>MacroCodec.Validate(Enumerable.Range(0,9).Select(i=>Mac("m"+i,(4,false,0))).ToList()),"macro count limit");
 Reject(()=>MacroCodec.Validate(Enumerable.Range(0,8).Select(i=>Mac("m"+i,Enumerable.Range(0,60).Select(_=>(byte)4).Select(c=>(c,false,0)).ToArray())).ToList()),"macro capacity limit");
+Check(LedFrame.Hsv(0,1,1)==(255,0,0)&&LedFrame.Hsv(120,1,1)==(0,255,0)&&LedFrame.Hsv(240,1,1)==(0,0,255),"hsv primaries");
+var fr=new byte[LedFrame.Bytes];LedFrame.Set(fr,125,1,2,3);Check(fr[375]==1&&fr[377]==3,"frame slot layout");
+var musicKeys=new[]{new PhysicalKey(1,"A",100,254,28,30,10),new PhysicalKey(2,"B",100,38,28,30,20)};
+var loud=Enumerable.Repeat(1f,LedFrame.Bands).ToArray();var quiet=new float[LedFrame.Bands];
+for(int st=0;st<LedFrame.MusicStyles.Length;st++){var viz=new MusicVisualizer(musicKeys);bool lit=false;for(int i=1;i<=12;i++)lit|=viz.Render(st,loud,i*.1).Any(b=>b>0);
+    Check(lit,"music style lights keys "+st);}
+Check(new MusicVisualizer(musicKeys).Render(0,quiet,0).All(b=>b==0),"spectrum silence is dark");
 Console.WriteLine($"{passed} passed, 0 failed");
 

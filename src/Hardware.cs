@@ -18,6 +18,7 @@ public sealed record DeviceProfile(int Schema, string Device, string Release, Da
 public sealed record PhysicalKey(int Id, string Name, double X, double Y, double Width, double Height, int Slot);
 public static class Store {
     public static readonly string Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "iLovbeeStudio");
+#if !WIDGET
     public static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
     public static string Write<T>(string directory, string name, T value) {
         string folder = Path.Combine(Root, directory); Directory.CreateDirectory(folder);
@@ -44,6 +45,7 @@ public static class Store {
         if (profile.Lighting is null || profile.Lighting.Length != 256 || Convert.FromHexString(profile.Lighting).Length != 128)
             throw new InvalidDataException("燈效資料長度不正確。");
     }
+#endif
 }
 public static class NativeHid {
     [StructLayout(LayoutKind.Sequential)] struct InterfaceData { public int Size; public Guid Class; public int Flags; public IntPtr Reserved; }
@@ -67,6 +69,15 @@ public static class NativeHid {
     [DllImport("hid.dll")] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_GetManufacturerString(SafeFileHandle h,byte[] value,int size);
     [DllImport("hid.dll",SetLastError=true)] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_SetFeature(SafeFileHandle h,byte[] value,int size);
     [DllImport("hid.dll",SetLastError=true)] [return:MarshalAs(UnmanagedType.U1)] static extern bool HidD_GetFeature(SafeFileHandle h,byte[] value,int size);
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+    /// <summary>寫入設定前先等所有鍵盤按鍵放開（最多 maxMs），避免設定封包與按鍵放開訊號重疊，造成最後一個鍵被重複送出。</summary>
+    public static void WaitKeysIdle(int maxMs=1500) {
+        var clock=System.Diagnostics.Stopwatch.StartNew();int quiet=0;
+        while(clock.ElapsedMilliseconds<maxMs) {
+            bool down=false;for(int k=8;k<0xFF && !down;k++)if(k is not (0x10 or 0x11 or 0x12) && (GetAsyncKeyState(k)&0x8000)!=0)down=true;
+            quiet=down?0:quiet+10;if(quiet>=150)return;Thread.Sleep(10);
+        }
+    }
     public static List<DeviceInfo> Enumerate() {
         HidD_GetHidGuid(out Guid guid); IntPtr set = SetupDiGetClassDevsW(ref guid,null,IntPtr.Zero,0x12);
         if (set == new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -121,11 +132,11 @@ public static class NativeHid {
         return reply.AsSpan(8,count).ToArray();
     }
     public static void Write(SafeFileHandle h,byte command,byte layer,byte[] data) {
-        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512)))
+        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512) || (command==8 && layer==0 && data.Length==LedFrame.Bytes)))
             throw new InvalidOperationException("未允許的設定寫入。");
         byte[] b=Packet(command,layer,data.Length);data.CopyTo(b,8);
         if(!HidD_SetFeature(h,b,b.Length)) throw new Win32Exception(Marshal.GetLastWin32Error(),"寫入失敗；備份仍保留。");
-        Thread.Sleep(command==5?200:80);
+        Thread.Sleep(command switch{5=>200,8=>0,_=>80});
     }
 }
 public sealed class KeyboardService {
@@ -148,13 +159,24 @@ public sealed class KeyboardService {
     }
     public byte[] ReadLights() { lock(gate){using var h=Open();return NativeHid.Read(h,0x84,0,128);} }
     public PowerInfo ReadPower() { lock(gate){using var h=Open();var b=NativeHid.Read(h,0x87,0,2);return new(b[0],b[1],DateTimeOffset.Now);} }
+#if !WIDGET
     public DeviceProfile Capture() {
         lock(gate) {
             var maps=Enumerable.Range(0,4).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
             return new(1,"258A:0199","2010",DateTimeOffset.Now,maps,Convert.ToHexString(ReadLights()));
         }
     }
+#endif
+#if WIDGET
+    /// <summary>小工具只會改燈效模式，備份僅保存燈效 payload（十六進位文字）。</summary>
+    public string Backup(string purpose) {
+        string folder=Path.Combine(Store.Root,"backups");Directory.CreateDirectory(folder);
+        string file=Path.Combine(folder,DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".lighting.txt");
+        File.WriteAllText(file,Convert.ToHexString(ReadLights()));return file;
+    }
+#else
     public string Backup(string purpose) => Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+purpose+".json",Capture());
+#endif
     public static void CheckConflict() {
         foreach(var p in System.Diagnostics.Process.GetProcessesByName("DeviceDriver")) {
             using(p) {
@@ -164,11 +186,12 @@ public sealed class KeyboardService {
             }
         }
     }
+#if !WIDGET
     public void ApplyMappings(Dictionary<int,byte[]> expected,Dictionary<int,byte[]> desired) {
         MappingEditor.Validate(expected);MappingEditor.Validate(desired);
         foreach(int layer in expected.Keys)if(!expected[layer].AsSpan(59*4,4).SequenceEqual(desired[layer].AsSpan(59*4,4)))throw new ArgumentException("FN 鍵必須保留。");
         lock(gate){
-            CheckConflict();var before=Capture();
+            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();
             if(expected.Any(p=>!Convert.FromHexString(before.Keymaps[p.Key]).SequenceEqual(p.Value)))throw new IOException("鍵盤設定已變更。請先匯出草稿，再重新讀取鍵盤。");
             var changed=expected.Keys.Where(i=>!expected[i].SequenceEqual(desired[i])).Order().ToArray();if(changed.Length==0)return;
             Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-keymaps.json",before);
@@ -186,7 +209,7 @@ public sealed class KeyboardService {
     public void Remap(int layer,int slot,byte[] expected,byte[] action) {
         if(layer<0 || layer>3 || slot<0 || slot>=104 || action.Length!=4 || expected.Length!=416) throw new ArgumentException("無效的按鍵映射。");
         lock(gate) {
-            CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x83,(byte)layer,416);
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x83,(byte)layer,416);
             if(!before.SequenceEqual(expected)) throw new IOException("鍵盤設定已在其他地方變更。請重新讀取後再套用。");
             Backup("before-keymap");
             var after=(byte[])before.Clone();action.CopyTo(after,slot*4);
@@ -204,12 +227,15 @@ public sealed class KeyboardService {
     /// <summary>寫入巨集緩衝區（指令 5）。原廠流程不讀回巨集，因此此處無法讀回驗證；先備份，且需在按鍵指向巨集之前寫入。</summary>
     public void WriteMacros(byte[] buffer) {
         if(buffer.Length<4 || buffer.Length>MacroCodec.MaxBytes) throw new ArgumentException("無效的巨集資料。");
-        lock(gate) { CheckConflict();using var h=Open();Backup("before-macro");NativeHid.Write(h,5,0,buffer); }
+        lock(gate) { NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();Backup("before-macro");NativeHid.Write(h,5,0,buffer); }
     }
+#endif
+    /// <summary>送出一格即時燈效（指令 8，僅在燈效模式 18 時顯示）。不寫入設定，因此不備份。</summary>
+    public void SendFrame(byte[] rgb) { lock(gate){using var h=Open();NativeHid.Write(h,8,0,rgb);} }
     public void SetLights(byte[] expected,byte[] after) {
         if(expected.Length!=128 || after.Length!=128) throw new ArgumentException("無效的燈效設定。");
         lock(gate) {
-            CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x84,0,128);
+            NativeHid.WaitKeysIdle();CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x84,0,128);
             if(!before.SequenceEqual(expected)) throw new IOException("燈效設定已變更，請重新讀取。");
             Backup("before-lighting");
             try {
@@ -222,10 +248,11 @@ public sealed class KeyboardService {
             }
         }
     }
+#if !WIDGET
     public void Restore(DeviceProfile profile) {
         Store.Validate(profile);
         lock(gate) {
-            CheckConflict();var before=Capture();Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-restore.json",before);
+            NativeHid.WaitKeysIdle();CheckConflict();var before=Capture();Store.Write("backups",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-before-restore.json",before);
             void Apply(DeviceProfile p) {
                 using var h=Open();
                 foreach(var layer in p.Keymaps.OrderBy(x=>x.Key)) {
@@ -242,4 +269,5 @@ public sealed class KeyboardService {
             }
         }
     }
+#endif
 }

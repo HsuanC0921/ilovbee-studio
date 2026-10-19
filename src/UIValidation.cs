@@ -20,13 +20,13 @@ public sealed partial class MainWindow {
         try{
             foreach(int width in new[]{1320,1030}){
                 double scale=root.XamlRoot.RasterizationScale;AppWindow.Resize(new SizeInt32((int)(width*scale),(int)(850*scale)));await Task.Delay(200);
-                foreach(string name in new[]{"按鍵重設","巨集","燈效","裝置狀態","按鍵測試","設定檔"}){
+                foreach(string name in new[]{"按鍵重設","巨集","燈效","自訂燈光","裝置狀態","按鍵測試","設定檔"}){
                     Navigate(name);root.UpdateLayout();await Task.Delay(400);
                     bool rendered=body.ActualWidth>500 && body.Children.Count>0;
                     bool keyCount=name!="按鍵重設" || buttons.Count==87;
                     bool state=name!="按鍵重設" || applyButton?.IsEnabled==(service.Current!=null && editor.ChangeCount>0);
                     results.Add(new{Width=width,Page=name,Rendered=rendered,KeyCountValid=keyCount,ApplyStateValid=state,Battery=battery.Latest?.Percent});passed&=rendered&&keyCount&&state;
-                    await Capture(root,Path.Combine(folder,$"page-{Array.IndexOf(new[]{"按鍵重設","巨集","燈效","裝置狀態","按鍵測試","設定檔"},name)}-{width}.png"));
+                    await Capture(root,Path.Combine(folder,$"page-{Array.IndexOf(new[]{"按鍵重設","巨集","燈效","自訂燈光","裝置狀態","按鍵測試","設定檔"},name)}-{width}.png"));
                 }
             }
             File.WriteAllText(Path.Combine(folder,"ui-check.json"),JsonSerializer.Serialize(new{Passed=passed,Checks=results},Store.Json));

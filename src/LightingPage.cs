@@ -128,6 +128,7 @@ public sealed partial class MainWindow {
                 int hi=LightEffects.HasSpeed(m)?speed:before[57+2*m]>>4,lo=LightEffects.HasColor(m)?colorIndex:before[57+2*m]&0xF;
                 after[57+2*m]=(byte)((hi<<4)|lo);
             }
+            var lc=LiveConfig.Load();if(lc.Mode!="off"){lc.Mode="off";lc.Save();await Task.Delay(1200);}
             if(!after.SequenceEqual(before)){await Task.Run(()=>service.SetLights(before,after));Message("燈效已套用並完成讀回核對。");}else Message("鍵盤目前已使用這些設定。");
             lights=after;current=chosen;level=StoredLevel(chosen);speed=StoredSpeed(chosen);colorIndex=StoredColor(chosen);Sync();
         });

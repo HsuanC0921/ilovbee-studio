@@ -24,10 +24,25 @@ public static class SchemeLibrary {
         MappingEditor.Validate(layers);
         return new(name,layers.ToDictionary(p=>p.Key,p=>Convert.ToHexString(p.Value)));
     }
+    public static void Rename(int index,string name){
+        name=name.Trim();
+        if(name.Length is 0 or >MaxName)throw new ArgumentException($"方案名稱需為 1 到 {MaxName} 個字。");
+        if(Items.Where((_,i)=>i!=index).Any(s=>s.Name==name))throw new ArgumentException("已有同名方案。");
+        Items[index]=Items[index] with{Name=name};Save();
+    }
     public static Dictionary<int,byte[]> Decode(Scheme s){var maps=s.Layers.ToDictionary(p=>p.Key,p=>Convert.FromHexString(p.Value));MappingEditor.Validate(maps);return maps;}
 }
 public sealed partial class MainWindow {
     int schemeSel=-1;
+    async Task<string?> PickSave(string name){
+        var picker=new Windows.Storage.Pickers.FileSavePicker{SuggestedFileName=name};picker.FileTypeChoices.Add("JSON",new List<string>{".json"});
+        WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));return (await picker.PickSaveFileAsync())?.Path;
+    }
+    async Task<string?> PickOpen(){
+        var picker=new Windows.Storage.Pickers.FileOpenPicker();picker.FileTypeFilter.Add(".json");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));var file=await picker.PickSingleFileAsync();
+        if(file!=null && new FileInfo(file.Path).Length>262144)throw new InvalidDataException("檔案過大。");return file?.Path;
+    }
     void SchemeCard(){
         var items=SchemeLibrary.Items;if(schemeSel>=items.Count)schemeSel=-1;
         var card=new StackPanel{Spacing=12};card.Children.Add(Sub($"按鍵方案（{items.Count}／{SchemeLibrary.Max}）"));
@@ -48,7 +63,16 @@ public sealed partial class MainWindow {
                 var scheme=items[schemeSel];var desired=SchemeLibrary.Decode(scheme);var before=MappingEditor.Clone(maps);
                 await Task.Run(()=>service.ApplyMappings(before,desired));
                 maps.Clear();foreach(var m in desired)maps[m.Key]=m.Value;editor.Load(maps);SaveDraft();ProfilesPage();Log($"已套用方案「{scheme.Name}」");Message($"已套用方案「{scheme.Name}」並讀回核對。");})),
-            B("刪除方案",()=>{if(schemeSel<0)return;items.RemoveAt(schemeSel);SchemeLibrary.Save();schemeSel=-1;ProfilesPage();})));
+            B("刪除方案",()=>{if(schemeSel<0)return;items.RemoveAt(schemeSel);SchemeLibrary.Save();schemeSel=-1;ProfilesPage();}),
+            B("重新命名",()=>{try{if(schemeSel<0)throw new ArgumentException("請先選擇方案。");SchemeLibrary.Rename(schemeSel,name.Text);ProfilesPage();Message("已重新命名。");}catch(ArgumentException e){Message(e.Message,true);}})));
+        card.Children.Add(Row(
+            B("匯出方案",async()=>await Run("正在匯出方案……",async()=>{
+                if(schemeSel<0)throw new InvalidOperationException("請先選擇方案。");
+                var path=await PickSave("B87-方案-"+items[schemeSel].Name);if(path==null)return;await File.WriteAllTextAsync(path,JsonSerializer.Serialize(items[schemeSel],Store.Json));Message("方案已匯出。");})),
+            B("匯入方案",async()=>await Run("正在匯入方案……",async()=>{
+                var path=await PickOpen();if(path==null)return;
+                var s=JsonSerializer.Deserialize<Scheme>(await File.ReadAllTextAsync(path))??throw new InvalidDataException("無效的方案檔。");
+                var imported=SchemeLibrary.Create(s.Name??"",SchemeLibrary.Decode(s));items.Add(imported);SchemeLibrary.Save();schemeSel=items.Count-1;ProfilesPage();Message($"已匯入方案「{imported.Name}」。");}))));
         body.Children.Add(Card(card));
     }
 }

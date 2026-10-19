@@ -21,6 +21,13 @@ public sealed partial class MainWindow {
             B("新增",()=>{if(lib.Count>=MacroCodec.MaxMacros){Message($"巨集最多 {MacroCodec.MaxMacros} 個。",true);return;}lib.Add(new Macro("巨集"+(lib.Count+1),new()));macroSel=lib.Count-1;MacroLibrary.Save();MacrosPage();}),
             B("複製",()=>{if(lib.Count==0||lib.Count>=MacroCodec.MaxMacros)return;var m=lib[macroSel];lib.Add(new Macro((m.Name+"2").Length>MacroCodec.MaxName?m.Name:m.Name+"2",m.Events.ToList()));macroSel=lib.Count-1;MacroLibrary.Save();MacrosPage();}),
             B("刪除",()=>{if(lib.Count==0)return;if(maps.Values.Any(map=>Enumerable.Range(0,104).Any(s=>MacroCodec.IsMacroKey(map.AsSpan(s*4,4)))))Message("鍵盤上仍有按鍵指向巨集；刪除會改變巨集編號，請先到按鍵重設改回原本功能。",true);else{lib.RemoveAt(macroSel);MacroLibrary.Save();MacrosPage();}})));
+        listPanel.Children.Add(Row(
+            B("匯出巨集庫",async()=>await Run("正在匯出巨集……",async()=>{var path=await PickSave("B87-巨集");if(path==null)return;await System.IO.File.WriteAllTextAsync(path,System.Text.Json.JsonSerializer.Serialize(lib,Store.Json));Message("巨集庫已匯出。");})),
+            B("匯入巨集（加到清單後面）",async()=>await Run("正在匯入巨集……",async()=>{
+                var path=await PickOpen();if(path==null)return;
+                var added=System.Text.Json.JsonSerializer.Deserialize<List<Macro>>(await System.IO.File.ReadAllTextAsync(path))??throw new System.IO.InvalidDataException("無效的巨集檔。");
+                if(added.Any(m=>m?.Name==null||m.Events==null))throw new System.IO.InvalidDataException("無效的巨集檔。");
+                var merged=lib.Concat(added).ToList();MacroLibrary.Replace(merged);macroSel=lib.Count;MacrosPage();Message($"已匯入 {added.Count} 個巨集；寫入鍵盤後才會生效。");}))));
         body.Children.Add(Card(listPanel));
         if(lib.Count>0)body.Children.Add(Card(MacroEditor(lib[macroSel])));
         var write=new StackPanel{Spacing=10};write.Children.Add(Sub("寫入鍵盤"));

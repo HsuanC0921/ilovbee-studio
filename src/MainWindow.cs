@@ -79,7 +79,7 @@ public sealed partial class MainWindow : Window {
         AppWindow.TitleBar.ButtonHoverBackgroundColor=ColorHelper.FromArgb(255,227,231,237);
         titleBar.SizeChanged+=(_,_)=>titleBar.Padding=new Thickness(20,0,AppWindow.TitleBar.RightInset/(titleBar.XamlRoot?.RasterizationScale??1)+16,0);
         var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=12};var brandText=new StackPanel{Spacing=2};brandText.Children.Add(new TextBlock{Text="B87",FontSize=22,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink});brandText.Children.Add(T("鍵盤設定",12,Muted));brand.Children.Add(brandText);sidebar.Children.Add(brand);
-        var names=new[]{("按鍵重設",Symbol.Keyboard),("巨集",Symbol.Edit),("燈效",Symbol.Highlight),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
+        var names=new[]{("按鍵重設",Symbol.Keyboard),("巨集",Symbol.Edit),("燈效",Symbol.Highlight),("自訂燈光",Symbol.FontColor),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
         foreach(var n in names){
             var icon=new SymbolIcon(n.Item2){Foreground=Muted,Width=18,Height=18};var label=T(n.Item1,14,Ink);
             var content=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};content.Children.Add(icon);content.Children.Add(label);
@@ -147,7 +147,7 @@ public sealed partial class MainWindow : Window {
     void UpdateNavigation(){
         foreach(var pair in navigationButtons){bool active=pair.Key==page;pair.Value.Background=active?Brush("#DCEAFF"):new SolidColorBrush(Colors.Transparent);pair.Value.Foreground=active?Blue:Ink;var visual=navigationItems[pair.Key];visual.Label.Foreground=active?Blue:Ink;visual.Label.FontWeight=active?Microsoft.UI.Text.FontWeights.SemiBold:Microsoft.UI.Text.FontWeights.Normal;visual.Icon.Foreground=active?Blue:Muted;}
     }
-    void Navigate(string name){lightTimer?.Stop();page=name;switch(name){case "按鍵重設":RemapPage();break;case "巨集":MacrosPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
+    void Navigate(string name){lightTimer?.Stop();page=name;switch(name){case "按鍵重設":RemapPage();break;case "巨集":MacrosPage();break;case "燈效":LightingPage();break;case "自訂燈光":CustomLightsPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
     void RemapPage(){
         Heading("按鍵重設","自訂按鍵、媒體控制與組合快捷鍵。");
         actions=KeyActions.All().Concat(MacroLibrary.Items.Select((m,i)=>new KeyAction("巨集："+m.Name,MacroCodec.KeyCode(i)))).ToList();
