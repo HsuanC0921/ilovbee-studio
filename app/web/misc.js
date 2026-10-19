@@ -68,14 +68,22 @@ PAGES.profiles=body=>{
         await api("/api/restore",obj);S.draft=null;await load();go("profiles");say("完整設定已還原並讀回核對。")})}),
     btn("立即建立完整備份",()=>run("正在建立備份……",async()=>{const r=await api("/api/backup",{});say("已儲存："+r.file);go("profiles")})))));
 
-  const head=sub("自動備份"),list2=h("div",{class:"list"},muted("載入中……"));
-  body.append(card(head,muted("變更設定前會自動建立備份，檔案儲存於本機。"),list2));
-  api("/api/backups").then(files=>{
-    files=files||[];
-    head.textContent=`自動備份（${files.length}）`;
+  const head=sub("備份"),opts=h("div"),list2=h("div",{class:"list"},muted("載入中……"));
+  body.append(card(head,muted("備份檔只存在本機。寫入失敗時的自動還原不依賴這些檔案，關閉自動備份也安全。"),opts,list2));
+  api("/api/backups").then(b=>{
+    const files=b.files||[],manual=f=>f.endsWith("-manual.json");
+    head.textContent=`備份（${files.length}）`;
+    const auto=h("input",{type:"checkbox",checked:b.auto});
+    const num=v=>h("input",{type:"number",min:1,max:b.max,value:v,style:{width:"80px"}});
+    const keepAuto=num(b.keepAuto),keepManual=num(b.keepManual);
+    const save=btn("儲存備份設定",()=>run("正在儲存……",async()=>{
+      const clamp=x=>Math.min(b.max,Math.max(1,Math.round(+x.value||5)));
+      await api("/api/backups/settings",{auto:auto.checked,keepAuto:clamp(keepAuto),keepManual:clamp(keepManual)});go("profiles");say("備份設定已儲存，超出份數的舊備份已刪除。")}));
+    opts.replaceChildren(h("label",{class:"chk"},auto,"變更設定前自動備份"),
+      row(h("label",null,"自動備份保留"),keepAuto,h("span",null,"份"),h("label",null,"手動備份保留"),keepManual,h("span",null,"份"),save));
     const restoreBk=f=>{if(!confirm("要還原這份備份嗎？"))return;
       run("正在還原備份……",async()=>{await api("/api/restore?name="+encodeURIComponent(f),{});S.draft=null;await load();go("profiles");say("已還原並讀回核對。")})};
     list2.replaceChildren(...(files.length?files.map(f=>h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"8px"}},
-      h("span",null,f),btn("還原",()=>restoreBk(f)))):[muted("尚無備份。")]));
+      h("span",null,h("span",{class:"chip"},manual(f)?"手動":"自動")," ",f),btn("還原",()=>restoreBk(f)))):[muted("尚無備份。")]));
   }).catch(e=>say(e.message,true));
 };

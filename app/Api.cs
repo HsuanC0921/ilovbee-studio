@@ -54,8 +54,11 @@ internal sealed class Api {
                 case "GET /api/live":{var c=LiveConfig.Load();return Json(w=>{w.WriteStartObject();w.WriteString("mode",c.Mode);w.WriteNumber("style",c.Style);w.WriteNumber("gain",c.Gain);w.WriteNumber("colormode",c.ColorMode);w.WriteNumber("colordir",c.ColorDir);w.WriteStartArray("colors");foreach(var col in c.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("status",live.Status);w.WriteEndObject();});}
                 case "POST /api/live":return SetLive(Doc(r));
                 case "POST /api/decode":return Decode(Doc(r));
-                case "POST /api/backup":{string path=service.Backup("manual");return Json(w=>{w.WriteStartObject();w.WriteString("file",Path.GetFileName(path));w.WriteEndObject();});}
+                case "POST /api/backup":{string path=service.Backup("manual")!;return Json(w=>{w.WriteStartObject();w.WriteString("file",Path.GetFileName(path));w.WriteEndObject();});}
                 case "GET /api/backups":return Backups();
+                case "POST /api/backups/settings":{using var d=Doc(r);var e=d.RootElement;var s=new BackupSettings{Auto=e.GetProperty("auto").GetBoolean(),
+                    KeepAuto=Math.Clamp(e.GetProperty("keepAuto").GetInt32(),1,BackupSettings.MaxKeep),KeepManual=Math.Clamp(e.GetProperty("keepManual").GetInt32(),1,BackupSettings.MaxKeep)};
+                    s.Save();KeyboardService.Prune(s);return Ok();}
                 case "GET /api/profile":return Raw(JsonSerializer.SerializeToUtf8Bytes(service.Capture(),AppJson.Default.DeviceProfile));
                 case "POST /api/restore":return Restore(r);
                 default:return HttpResponse.Text(404,"not found");
@@ -157,7 +160,9 @@ internal sealed class Api {
     static string BackupFolder=>Path.Combine(Store.Root,"backups");
     HttpResponse Backups(){
         var files=Directory.Exists(BackupFolder)?Directory.GetFiles(BackupFolder,"*.json").OrderDescending().Select(Path.GetFileName).ToArray():Array.Empty<string?>();
-        return Json(w=>{w.WriteStartArray();foreach(var f in files)w.WriteStringValue(f);w.WriteEndArray();});
+        var s=BackupSettings.Load();
+        return Json(w=>{w.WriteStartObject();w.WriteBoolean("auto",s.Auto);w.WriteNumber("keepAuto",s.KeepAuto);w.WriteNumber("keepManual",s.KeepManual);w.WriteNumber("max",BackupSettings.MaxKeep);
+            w.WriteStartArray("files");foreach(var f in files)w.WriteStringValue(f);w.WriteEndArray();w.WriteEndObject();});
     }
     HttpResponse Restore(HttpRequest r){
         DeviceProfile profile;

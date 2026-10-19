@@ -58,7 +58,10 @@ The interface is in Traditional Chinese. The vendor app is no longer updated. Th
 
 ### Everything else
 
-- **Automatic backups**: every write is backed up first (the newest 60 are kept), read back to verify, and rolled back on failure. Full profile export and restore.
+- **Backups**: by default every write is backed up first, then read back to verify and rolled back on failure.
+  - Automatic backups can be switched off. Rollback does not depend on the backup files.
+  - Automatic and manual backups are kept separately, 5 of each by default (adjustable up to 100). Older ones are deleted.
+  - Full profile export and restore.
 - Key tester, USB connection status, Bluetooth battery level and low-battery alerts.
 - Tray menu with quick toggles and an option to start with Windows.
 
@@ -148,7 +151,7 @@ The full protocol notes are in [`docs/firmware.md`](docs/firmware.md): commands,
 
 Hardware writes are deliberately conservative:
 
-- **Backup → write → read back → roll back on mismatch.** Writes the keyboard cannot read back are backed up beforehand. These are macros and the colour table; the colour table is also saved locally.
+- **Backup → write → read back → roll back on mismatch.** The rollback uses the state held in memory, so it works even with automatic backups turned off. Writes the keyboard cannot read back are backed up beforehand when backups are on. These are macros and the colour table; the colour table is also saved locally.
 - Only known commands with exact lengths are allowed. The app never sends firmware-update, ISP or DFU commands.
 - The FN key cannot be remapped away.
 
@@ -165,7 +168,7 @@ The tests cover:
 - packet headers and length limits
 - profile validation
 - key and macro encoding, checked against packets captured from the vendor app
-- the colour table
+- the colour table and backup settings
 - per-key effects and the music visualizer
 
 `build.ps1` runs the tests before every publish.

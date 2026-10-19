@@ -32,6 +32,8 @@ Reject(()=>NativeHid.Packet(0x83,0,513),"oversized packet");
  Check(ka[0]==200&&ka[3]==200&&ka[6]>150&&ka[6]<200&&kf[6]==200,"key fx static/blink on/breathe; source untouched");
  var kb=LedFrame.Animate(kf,kx,0.6/0.7,2);Check(kb[3]==0&&kb[4]==0,"key blink off in second half");
  Check(Math.Max(ka[9],Math.Max(ka[10],ka[11]))==200,"key rainbow keeps brightness");}
+{var bs=new BackupSettings();Check(bs.Auto&&bs.KeepAuto==5&&bs.KeepManual==5,"backup defaults: on, 5 auto, 5 manual");
+ Check(BackupSettings.IsManual("x-manual.json")&&!BackupSettings.IsManual("x-before-lighting.json"),"manual backup detection");}
 Check(Convert.ToHexString(NativeHid.Packet(0x0a,0,ColorTable.Bytes).AsSpan(0,8))=="060A00000100A401","color table header matches vendor");
 {var t=ColorTable.Default();Check(Convert.ToHexString(ColorTable.Custom(t,0))=="000000"&&Convert.ToHexString(ColorTable.Custom(t,2))=="FF0000"&&t[2*21+20]==0xFF,"default color table");
  ColorTable.SetCustom(t,2,new byte[]{0,0,0xCC});Check(t[42]==0&&t[44]==0xCC&&t[45]==0,"custom color only touches slot 0");Reject(()=>ColorTable.SetCustom(t,0,new byte[3]),"mode 0 has no color");}
