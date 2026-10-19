@@ -70,9 +70,9 @@ public static class LightEffects {
             case 12:return Hsv(Hash(ordinal+5),Pulse(t,ordinal,4,.5));
             case 13:{double xc=295,w=x<xc?Math.Sin(t*3+x/70):Math.Sin(t*3+(x-xc)/70+Math.PI);return Hsv(x/Width*.6+.1,.3+.7*Smooth(y-165-62*w,30));}
             case 14:{double bar=PingPong(t*.55)*(LightGroups.StreamCount-1),g=LightGroups.Stream[ordinal];return Hsv(bar/LightGroups.StreamCount*.5+.45,Smooth(g-bar,1.6));}
-            case 15:{double n=LightGroups.WheelCount,g=LightGroups.Wheel[ordinal],best=0;for(int arm=0;arm<2;arm++){double d=((t*9+arm*n/2-g)%n+n)%n;best=Math.Max(best,d<7?1-d/7:0);}return Hsv(g/n+t*.1,best);}
+            case 15:{double n=LightGroups.WheelCount,g=LightGroups.Wheel[ordinal],best=0;for(int arm=0;arm<2;arm++){double d=((t*2.5+arm*n/2-g)%n+n)%n;best=Math.Max(best,d<9?1-d/9:0);}return Hsv(g/n+t*.03,.45+.55*best);}
             case 16:return Hsv(y/Height*.7-t*.3,1);
-            case 17:{double n=LightGroups.FlowerCount,head=(t*4.5)%(n+3),g=LightGroups.Flower[ordinal];return Hsv(head/n,Smooth(g-head,1.2));}
+            case 17:{double d=Math.Sqrt((x-418)*(x-418)+(y-187)*(y-187)),r=(t*150)%560;return Hsv(r/560,Smooth(d-r,55));}
             case 18:return Hsv(Math.Floor(x/Width*7)/7,1);
             default:return Color.FromArgb(0,0,0,0);
         }
