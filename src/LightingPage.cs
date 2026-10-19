@@ -39,7 +39,11 @@ public sealed partial class MainWindow {
         var info=new StackPanel{Spacing=2};info.Children.Add(modeName);info.Children.Add(hint);info.Children.Add(status);
         var bar=new Grid{ColumnSpacing=16};bar.ColumnDefinitions.Add(new(){Width=new GridLength(1,GridUnitType.Star)});bar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
         bar.Children.Add(info);Grid.SetColumn(apply,1);apply.VerticalAlignment=VerticalAlignment.Center;bar.Children.Add(apply);
-        var hero=new StackPanel{Spacing=16};hero.Children.Add(preview);hero.Children.Add(bar);
+        // 亮度：每個模式在 payload[56+2*模式] 有一個 1..4 的亮度值（實機以 Fn+↓ 三次讓 4→1 確認）。
+        var slider=new Slider{Minimum=1,Maximum=4,StepFrequency=1,TickFrequency=1,TickPlacement=Microsoft.UI.Xaml.Controls.Primitives.TickPlacement.Outside,Width=220,RequestedTheme=ElementTheme.Dark,VerticalAlignment=VerticalAlignment.Center};AutomationProperties.SetName(slider,"亮度");
+        var levelText=T("",12,onDark);levelText.VerticalAlignment=VerticalAlignment.Center;
+        var levelRow=Row(T("亮度",14,new SolidColorBrush(Colors.White)),slider,levelText);
+        var hero=new StackPanel{Spacing=16};hero.Children.Add(preview);hero.Children.Add(levelRow);hero.Children.Add(bar);
         var heroBg=new LinearGradientBrush{StartPoint=new Windows.Foundation.Point(0,0),EndPoint=new Windows.Foundation.Point(0,1)};
         heroBg.GradientStops.Add(new GradientStop{Color=ColorHelper.FromArgb(255,43,49,59),Offset=0});heroBg.GradientStops.Add(new GradientStop{Color=ColorHelper.FromArgb(255,22,25,31),Offset=1});
         body.Children.Add(new Border{Background=heroBg,CornerRadius=new CornerRadius(14),Padding=new Thickness(24,20,24,20),Child=hero});
@@ -61,29 +65,35 @@ public sealed partial class MainWindow {
             AutomationProperties.SetName(frame,names[i]);frames.Add(frame);tiles.Items.Add(frame);
         }
         body.Children.Add(tiles);
+        bool BrightnessMode(int m)=>m is >=1 and <=17;
+        int StoredLevel(int m)=>lights!=null && BrightnessMode(m) && lights[56+2*m] is >=1 and <=4?lights[56+2*m]:4;
+        int level=StoredLevel(chosen);bool syncing=false;
         var sw=Stopwatch.StartNew();bool still=!new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
         void Draw(){
             double t=still?1.2:sw.Elapsed.TotalSeconds;
             for(int i=0;i<cells.Count;i++){
                 var (k,glow,lit)=cells[i];var c=LightEffects.Sample(chosen,t,k.X+k.Width/2.0,k.Y+k.Height/2.0,i);
-                var color=Color.FromArgb(255,c.R,c.G,c.B);double a=c.A/255.0;
+                var color=Color.FromArgb(255,c.R,c.G,c.B);double a=c.A/255.0*(BrightnessMode(chosen)?.3+.7*level/4.0:1);
                 ((SolidColorBrush)lit.Fill).Color=color;lit.Opacity=a*.92;((SolidColorBrush)glow.Fill).Color=color;glow.Opacity=a*.28;
             }
         }
         void Sync(){
             modeName.Text=names[chosen];hint.Text=LightEffects.Hints[chosen];
-            apply.IsEnabled=!busy && lights!=null && chosen!=current;
-            status.Text=lights==null?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":chosen==current?"示意圖僅供預覽 · 這是鍵盤目前使用的模式。":$"示意圖僅供預覽 · 目前：{(current>=0?names[current]:"未知")} → 套用後：{names[chosen]}";
+            syncing=true;slider.IsEnabled=BrightnessMode(chosen);slider.Value=level;levelText.Text=BrightnessMode(chosen)?$"{level} / 4":"此模式無亮度設定";syncing=false;
+            bool changed=chosen!=current || (BrightnessMode(chosen) && level!=StoredLevel(chosen));
+            apply.IsEnabled=!busy && lights!=null && changed;
+            status.Text=lights==null?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":$"示意圖僅供預覽 · 目前：{(current>=0?names[current]:"未知")} → 套用後：{names[chosen]}";
             Draw();
         }
         void Mark(){for(int i=0;i<frames.Count;i++){bool on=i==chosen;frames[i].BorderBrush=on?Blue:Line;frames[i].BorderThickness=new Thickness(on?2:1);frames[i].Background=on?Brush("#EEF4FF"):new SolidColorBrush(Colors.White);}}
-        tiles.ItemClick+=(_,e)=>{int i=frames.IndexOf((Border)e.ClickedItem);if(i>=0){chosen=i;Mark();Sync();}};
+        tiles.ItemClick+=(_,e)=>{int i=frames.IndexOf((Border)e.ClickedItem);if(i>=0){chosen=i;level=StoredLevel(i);Mark();Sync();}};
+        slider.ValueChanged+=(_,e)=>{if(syncing)return;level=(int)Math.Round(e.NewValue);Sync();};
         Mark();Sync();
         apply.Click+=async(_,_)=>await Run("正在讀取並套用燈效……",async()=>{
             if(lights==null)throw new InvalidOperationException("請先讀取鍵盤。");
-            var before=await Task.Run(()=>service.ReadLights());var after=(byte[])before.Clone();after[10]=(byte)chosen;
+            var before=await Task.Run(()=>service.ReadLights());var after=(byte[])before.Clone();after[10]=(byte)chosen;if(BrightnessMode(chosen))after[56+2*chosen]=(byte)level;
             if(!after.SequenceEqual(before)){await Task.Run(()=>service.SetLights(before,after));Message("燈效已套用並完成讀回核對。");}else Message("鍵盤目前已使用此模式。");
-            lights=after;current=chosen;Sync();
+            lights=after;current=chosen;level=StoredLevel(chosen);Sync();
         });
         if(!still){lightTimer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(40)};lightTimer.Tick+=(_,_)=>Draw();lightTimer.Start();}
         var keysCard=new StackPanel{Spacing=12};keysCard.Children.Add(Sub("鍵盤快捷鍵"));
