@@ -15,6 +15,21 @@ public static class LightEffects {
         "按鍵亮起後，光向周邊按鍵擴散。","光波沿正弦曲線橫向行進。","光條由左至右來回掃過。","彩色扇葉繞中心旋轉。",
         "色彩由上往下流瀉。","光環自中心綻放並擴大。","使用逐鍵自訂配色。"};
 
+    // 每個模式可用的控制項（來自原廠 KB.ini 的 LedOpt1..17）。模式值同 payload[10]。
+    public static bool HasBrightness(int m)=>m is >=1 and <=17;
+    public static bool HasSpeed(int m)=>m is >=2 and <=17;
+    public static bool HasColor(int m)=>m is 1 or 2 or (>=4 and <=14);
+    /// <summary>韌體固定色票（實機逐一確認）：0 紅、1 綠、2 深藍、3 黃、4 紫、5 淺藍、6 白；7 為混色。</summary>
+    public static readonly string[] PaletteNames={"紅","綠","深藍","黃","紫","淺藍","白"};
+    public static readonly Color[] Palette={Color.FromArgb(255,255,64,64),Color.FromArgb(255,70,230,110),Color.FromArgb(255,40,80,255),Color.FromArgb(255,255,220,0),Color.FromArgb(255,185,70,255),Color.FromArgb(255,80,210,255),Color.FromArgb(255,255,255,255)};
+    public static readonly double[] SpeedScale={0,.35,.6,.85,1.2};
+    /// <summary>套用色票：colorIndex 0..6 為固定色，7 為混色（保留效果原本的色相）。</summary>
+    public static Color SampleTinted(int mode,double t,double x,double y,int ordinal,int colorIndex){
+        var c=Sample(mode,t,x,y,ordinal);
+        if(!HasColor(mode)||c.A==0)return c;
+        if(colorIndex is >=0 and <7){var p=Palette[colorIndex];return Color.FromArgb(c.A,p.R,p.G,p.B);}
+        return mode is 1 or 2?Hsv(t*.12,c.A/255.0):c;
+    }
     static double Hash(int n){unchecked{uint x=(uint)n*2654435761u;x^=x>>15;x*=2246822519u;x^=x>>13;return (x&0xFFFFFF)/(double)0x1000000;}}
     static double Row(double y)=>y<80?0:y<111?1:y<152?2:y<192?3:y<233?4:5;
     static double Smooth(double d,double width)=>Math.Exp(-d*d/(width*width));
