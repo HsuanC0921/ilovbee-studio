@@ -32,7 +32,7 @@ fn main() {
                 .build()?;
             #[cfg(target_os = "windows")]
             {
-                let _ = window_vibrancy::apply_mica(&window, None);
+                let _ = window_vibrancy::apply_mica(&window, Some(false));
             }
             let _ = window;
             Ok(())
