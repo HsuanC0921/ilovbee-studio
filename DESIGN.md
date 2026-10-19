@@ -78,7 +78,7 @@ Fluent controls retain their familiar keyboard focus and interaction states. The
 
 **Key Characteristics:**
 - Professional Traditional Chinese desktop UI
-- Native WinUI 3 controls and Fluent focus affordances
+- Standard HTML controls with visible focus outlines
 - Blue means selected; pale blue means pending
 - Large physical keyboard map with an explicit knob test affordance
 
@@ -119,7 +119,7 @@ Porcelain neutrals frame a single clear blue accent; color communicates state ra
 
 ## Layout
 
-The integrated 48px title bar sits above a fixed 210px WinUI sidebar built from standard buttons. The content area keeps device status at the top, scrollable page content in the middle, and operation feedback at the bottom. Use a 32px page inset and the observed 4/8/12/16/20px spacing steps. On the remapping page, keep the complete keyboard map prominent and the full-width assignment surface immediately below it; scale the map down as needed rather than cropping it.
+The integrated 48px title bar sits above a fixed 210px sidebar built from standard buttons. The content area keeps device status at the top, scrollable page content in the middle, and operation feedback at the bottom. Use a 32px page inset and the observed 4/8/12/16/20px spacing steps. On the remapping page, keep the complete keyboard map prominent and the full-width assignment surface immediately below it; scale the map down as needed rather than cropping it.
 
 ## Elevation & Depth
 
@@ -132,16 +132,16 @@ Use crisp, gently rounded geometry: 5px key corners, 8px assignment surface corn
 ## Components
 
 ### Buttons
-- **Character:** Familiar, tactile WinUI controls with concise Traditional Chinese action labels.
+- **Character:** Familiar, tactile controls with concise Traditional Chinese action labels.
 - **Primary:** The apply action uses the native accent button style; ordinary buttons use 16px horizontal and 9px vertical padding.
 - **Hover / Focus:** Preserve native Fluent hover, pressed, and keyboard-focus states.
 
 ### Inputs / Fields
-- **Style:** Use native WinUI text, combo, and suggestion controls for search, layer choice, and assignment.
+- **Style:** Use native text, select, and list controls for search, layer choice, and assignment.
 - **Focus:** Keep Fluent keyboard focus visible and preserve native interaction behavior.
 
 ### Navigation
-- **Style:** Five labeled WinUI buttons with familiar iconography in a fixed 210px sidebar. The active destination uses the primary blue surface; other destinations keep transparent backgrounds and muted icons.
+- **Style:** Seven labeled buttons with familiar iconography in a fixed 210px sidebar. The active destination uses the primary blue surface; other destinations keep transparent backgrounds and muted icons.
 
 ### Keyboard Map
 - **Style:** A complete, clickable physical layout on a rounded gray bed. White key faces carry compact legends; the selected key is blue, while a changed key is pale blue with a blue outline.
@@ -150,7 +150,7 @@ Use crisp, gently rounded geometry: 5px key corners, 8px assignment surface corn
 ## Do's and Don'ts
 
 ### Do:
-- **Do** retain native WinUI controls and their Fluent focus behavior.
+- **Do** retain standard controls and their focus behavior.
 - **Do** distinguish the selected key from staged edits using the established blue and pale blue states.
 - **Do** keep current assignment and proposed action visibly adjacent in the assignment strip.
 

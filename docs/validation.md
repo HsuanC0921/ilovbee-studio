@@ -2,7 +2,7 @@
 
 2026-10-18，Windows x64。
 
-- WinUI 3 主程式：Release build，0 warnings、0 errors。
+- Native AOT 主程式（本機網頁介面）：Release publish，0 warnings、0 errors。
 - NativeAOT 小工具：Release publish，0 warnings、0 errors。
 - 21 項自動檢查通過：封包限制、設定檔驗證、編碼、跨層草稿、Undo/Redo、取消、Resume、FN 保護與組合鍵名稱。
 - 實機：兩層按鍵批次套用與讀回核對通過；finally 還原後三層映射與燈效均與測試前相同。
