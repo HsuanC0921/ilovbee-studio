@@ -3,7 +3,7 @@ using Windows.UI;
 
 namespace iLovbeeStudio;
 
-/// <summary>燈效示意圖的軟體模擬；索引與鍵盤 payload[10] 的模式值相同。實際效果以鍵盤韌體為準。</summary>
+/// <summary>燈效示意圖的軟體模擬（花開富貴、霓虹流動、左右掃描、旋轉風車使用原廠 B87 動畫分組檔的按鍵分群）；索引與鍵盤 payload[10] 的模式值相同。實際效果以鍵盤韌體為準。</summary>
 public static class LightEffects {
     public const double Width=789,Height=313;
     public const int KeyCount=87;
@@ -46,13 +46,13 @@ public static class LightEffects {
             case 8:{double phase=Hash(ordinal+400),s=Math.Sin(Math.PI*(t*(.25+.35*Hash(ordinal+900))+phase));return Hsv(Hash(ordinal+77),Math.Pow(Math.Max(0,s),10));}
             case 9:return Rgb(Pulse(t,ordinal,3.2,1.1),170,225,255);
             case 10:{double len=6*Width,pos=Row(y)*Width+(Row(y)%2==0?x:Width-x),head=(t*820)%len,d=((head-pos)%len+len)%len;return Rgb(d<240?1-d/240:0,90,255,140);}
-            case 11:{double u=x/Width-t*.3;return Hsv(Math.Floor(u*3)/3+.05,.35+.65*Math.Pow(Math.Sin(u*Math.PI*6),2));}
+            case 11:{double u=LightGroups.Stream[ordinal]/(double)LightGroups.StreamCount-t*.3;return Hsv(Math.Floor(u*3)/3+.05,.35+.65*Math.Pow(Math.Sin(u*Math.PI*6),2));}
             case 12:{double best=0;int n=(int)Math.Floor(t*3);for(int k=n;k>n-6 && k>=0;k--){int c=(int)(Hash(k*13+5)*KeyCount);double cx=60+Hash(c+11)*670,cy=50+Hash(c+23)*220,d=Math.Sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy)),age=t-k/3.0;best=Math.Max(best,Math.Exp(-age/1.4)*Smooth(d,50+age*40));}return Rgb(best,255,150,90);}
             case 13:return Hsv(x/Width*.5+.5,Smooth(y-165-70*Math.Sin(x/85-t*3),26));
-            case 14:{double bar=PingPong(t*.55)*Width;return Hsv(bar/Width*.5+.45,Smooth(x-bar,48));}
-            case 15:{double a=angle/(2*Math.PI)-t*.3;a-=Math.Floor(a);double blade=Math.Floor(a*4),within=a*4-blade;return Hsv(blade/4+.08,.25+.75*Math.Pow(Math.Sin(within*Math.PI),.6));}
+            case 14:{double bar=PingPong(t*.55)*(LightGroups.StreamCount-1),g=LightGroups.Stream[ordinal];return Hsv(bar/LightGroups.StreamCount*.5+.45,Smooth(g-bar,1.6));}
+            case 15:{double n=LightGroups.WheelCount,g=LightGroups.Wheel[ordinal],best=0;for(int arm=0;arm<2;arm++){double d=((t*9+arm*n/2-g)%n+n)%n;best=Math.Max(best,d<7?1-d/7:0);}return Hsv(g/n+t*.1,best);}
             case 16:return Hsv(y/Height*.7-t*.3,1);
-            case 17:{double r=(t*150)%380,petal=.55+.45*Math.Cos(6*angle+t);return Hsv(r/380,Smooth(dist-r,46)*petal);}
+            case 17:{double n=LightGroups.FlowerCount,head=(t*4.5)%(n+3),g=LightGroups.Flower[ordinal];return Hsv(head/n,Smooth(g-head,1.2));}
             case 18:return Hsv(Math.Floor(x/Width*7)/7,1);
             default:return Color.FromArgb(0,0,0,0);
         }

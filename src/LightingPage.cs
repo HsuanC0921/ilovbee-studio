@@ -73,13 +73,13 @@ public sealed partial class MainWindow {
             double t=still?1.2:sw.Elapsed.TotalSeconds;
             for(int i=0;i<cells.Count;i++){
                 var (k,glow,lit)=cells[i];var c=LightEffects.Sample(chosen,t,k.X+k.Width/2.0,k.Y+k.Height/2.0,i);
-                var color=Color.FromArgb(255,c.R,c.G,c.B);double a=c.A/255.0*(BrightnessMode(chosen)?.3+.7*level/4.0:1);
+                var color=Color.FromArgb(255,c.R,c.G,c.B);double a=c.A/255.0*(BrightnessMode(chosen)?new[]{0,.08,.8,.9,1.0}[level]:1);
                 ((SolidColorBrush)lit.Fill).Color=color;lit.Opacity=a*.92;((SolidColorBrush)glow.Fill).Color=color;glow.Opacity=a*.28;
             }
         }
         void Sync(){
             modeName.Text=names[chosen];hint.Text=LightEffects.Hints[chosen];
-            syncing=true;slider.IsEnabled=BrightnessMode(chosen);slider.Value=level;levelText.Text=BrightnessMode(chosen)?$"{level} / 4":"此模式無亮度設定";syncing=false;
+            syncing=true;slider.IsEnabled=BrightnessMode(chosen);slider.Value=level;levelText.Text=BrightnessMode(chosen)?$"{level} / 4"+(level==1?" · 近乎熄滅":""):"此模式無亮度設定";syncing=false;
             bool changed=chosen!=current || (BrightnessMode(chosen) && level!=StoredLevel(chosen));
             apply.IsEnabled=!busy && lights!=null && changed;
             status.Text=lights==null?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":$"示意圖僅供預覽 · 目前：{(current>=0?names[current]:"未知")} → 套用後：{names[chosen]}";
