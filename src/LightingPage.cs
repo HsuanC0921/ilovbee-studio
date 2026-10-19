@@ -150,6 +150,31 @@ public sealed partial class MainWindow {
         });
         LoadSleep();
         var sleepCard=new StackPanel{Spacing=12};sleepCard.Children.Add(Sub("無線休眠時間"));sleepCard.Children.Add(T("藍牙模式下閒置多久後進入休眠。",12,Muted));sleepCard.Children.Add(Row(sleepSlider,sleepText,sleepApply));body.Children.Add(Card(sleepCard));
+        // 鍵盤設定（原廠「鍵盤設定」頁）：payload[3]＝防抖（4＝辦公模式，1＝遊戲模式）；payload[22]＝Tap（0＝關閉，10..127＝開啟並指定 Tap 時間，原廠預設 20）。
+        var officeBox=new CheckBox{Content="辦公模式（防抖較長，減少連按誤觸；關閉為遊戲模式，反應最快）"};AutomationProperties.SetName(officeBox,"辦公模式");
+        var tapBox=new CheckBox{Content="啟用 Tap"};AutomationProperties.SetName(tapBox,"啟用 Tap");
+        var tapNum=new NumberBox{Minimum=10,Maximum=127,SmallChange=1,SpinButtonPlacementMode=NumberBoxSpinButtonPlacementMode.Inline,Width=140,Value=20,Header="Tap 時間（預設 20）"};AutomationProperties.SetName(tapNum,"Tap 時間");
+        var settingsApply=B("套用",()=>{});bool settingsSync=false;
+        void LoadSettings(){
+            settingsSync=true;bool ok=lights!=null;
+            officeBox.IsChecked=ok&&lights![3]==4;tapBox.IsChecked=ok&&lights![22]!=0;tapNum.Value=ok&&lights![22] is >=10 and <=127?lights[22]:20;
+            officeBox.IsEnabled=tapBox.IsEnabled=ok;tapNum.IsEnabled=ok&&tapBox.IsChecked==true;settingsSync=false;settingsApply.IsEnabled=false;
+        }
+        void SettingsChanged(){
+            if(settingsSync||lights==null)return;tapNum.IsEnabled=tapBox.IsChecked==true;
+            bool debounce=(officeBox.IsChecked==true)!=(lights[3]==4),tapOnOff=(tapBox.IsChecked==true)!=(lights[22]!=0),tapTime=tapBox.IsChecked==true&&lights[22]!=0&&(int)tapNum.Value!=lights[22];
+            settingsApply.IsEnabled=!busy&&(debounce||tapOnOff||tapTime);
+        }
+        officeBox.Click+=(_,_)=>SettingsChanged();tapBox.Click+=(_,_)=>SettingsChanged();tapNum.ValueChanged+=(_,_)=>SettingsChanged();
+        settingsApply.Click+=async(_,_)=>await Run("正在套用鍵盤設定……",async()=>{
+            if(lights==null)throw new InvalidOperationException("請先讀取鍵盤。");
+            double tapValue=double.IsNaN(tapNum.Value)?20:Math.Clamp(tapNum.Value,10,127);
+            var before=await Task.Run(()=>service.ReadLights());var after=(byte[])before.Clone();after[3]=(byte)(officeBox.IsChecked==true?4:1);after[22]=(byte)(tapBox.IsChecked==true?(int)tapValue:0);
+            if(!after.SequenceEqual(before)){await Task.Run(()=>service.SetLights(before,after));Message("鍵盤設定已套用並完成讀回核對。");}
+            lights=after;LoadSettings();
+        });
+        LoadSettings();
+        var settingsCard=new StackPanel{Spacing=12};settingsCard.Children.Add(Sub("鍵盤設定"));settingsCard.Children.Add(officeBox);settingsCard.Children.Add(Row(tapBox,tapNum));settingsCard.Children.Add(settingsApply);body.Children.Add(Card(settingsCard));
         var keysCard=new StackPanel{Spacing=12};keysCard.Children.Add(Sub("鍵盤快捷鍵"));
         keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Scroll Lock"),T("切換主背光效果",14,Muted)));
         keysCard.Children.Add(Row(Chip("Fn"),T("＋",12,Muted),Chip("Backspace"),T("切換整體 RGB 燈光（含側燈）",14,Muted)));body.Children.Add(Card(keysCard));

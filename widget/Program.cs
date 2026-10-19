@@ -50,16 +50,21 @@ internal static unsafe class Program {
         while(GetMessageW(out var message,IntPtr.Zero,0,0)>0){TranslateMessage(ref message);DispatchMessageW(ref message);}
         KillTimer(window,(UIntPtr)1);KillTimer(window,(UIntPtr)2);controller?.Dispose();Shell_NotifyIconW(2,ref tray);if(tray.Icon!=IntPtr.Zero)DestroyIcon(tray.Icon);
     }
+    [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index,uint dpi);
+    [DllImport("user32.dll")] static extern uint GetDpiForSystem();
+    /// <summary>依系統 DPI 取得托盤圖示尺寸（SM_CXSMICON），再把 16×16 的電池圖樣放大到該尺寸。</summary>
     static IntPtr MakeIcon(int? level){
-        var rgba=new byte[16*16*4];var mask=Enumerable.Repeat((byte)255,64).ToArray();
-        for(int y=3;y<13;y++)for(int x=1;x<15;x++){
-            bool border=(x==1||x==13||y==3||y==12)&&x<=13;
+        int size=Math.Max(16,GetSystemMetricsForDpi(49,GetDpiForSystem()));
+        var rgba=new byte[size*size*4];var mask=Enumerable.Repeat((byte)255,size*((size+7)/8)).ToArray();
+        for(int py=0;py<size;py++)for(int px=0;px<size;px++){
+            int x=px*16/size,y=py*16/size;
+            bool border=(x==1||x==13||y==3||y==12)&&x<=13&&y>=3&&y<13&&x>=1;
             bool cap=x==14&&y>=6&&y<=9;
             bool fill=level is int value&&x>=3&&x<3+(int)Math.Round(value/100.0*9)&&y>=5&&y<=10;
-            if(!border&&!cap&&!fill)continue;int at=(y*16+x)*4;
+            if(!border&&!cap&&!fill)continue;int at=(py*size+px)*4;
             rgba[at]=(byte)(level<=20?45:189);rgba[at+1]=(byte)(level<=20?55:90);rgba[at+2]=(byte)(level<=20?200:24);rgba[at+3]=255;
-            mask[y*4+x/8]&=(byte)~(0x80>>(x%8));
-        }return CreateIcon(IntPtr.Zero,16,16,1,32,mask,rgba);
+            mask[py*((size+7)/8)+px/8]&=(byte)~(0x80>>(px%8));
+        }return CreateIcon(IntPtr.Zero,size,size,1,32,mask,rgba);
     }
     static void Update(uint command=1){
         battery=WindowsBattery.Read();IntPtr previous=tray.Icon;tray.Icon=MakeIcon(battery?.Percent);
