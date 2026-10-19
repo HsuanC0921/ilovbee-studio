@@ -102,6 +102,9 @@ internal static unsafe class Program {
     }
     static void LaunchUi(int port,string token){
         string url=$"http://127.0.0.1:{port}/?t={token}";
+        // 有 Tauri 外殼（iLovbeeUI.exe，WebView2）時優先使用：Mica 背景、自繪標題列；否則退回 Edge 應用程式視窗。
+        string shellExe=Path.Combine(AppContext.BaseDirectory,"iLovbeeUI.exe");
+        if(File.Exists(shellExe)){Process.Start(new ProcessStartInfo(shellExe,$"--url \"{url}\""){UseShellExecute=false});return;}
         string[] candidates={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),@"Microsoft\Edge\Application\msedge.exe"),Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),@"Microsoft\Edge\Application\msedge.exe")};
         string? edge=candidates.FirstOrDefault(File.Exists);
         if(edge==null){Process.Start(new ProcessStartInfo(url){UseShellExecute=true});return;}

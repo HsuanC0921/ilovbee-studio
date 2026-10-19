@@ -1,6 +1,15 @@
 // 共用：DOM 小工具、API 呼叫、全域狀態、訊息列、頁面框架
 const S={st:null,keys:[],page:"remap",busy:false,layer:0,sel:null,base:null,draft:null,undo:[],redo:[],timers:[]};
-const NAV=[["remap","按鍵重設","⌨"],["macros","巨集","✎"],["lighting","燈效","✦"],["custom","自訂燈光","🎨"],["status","裝置狀態","⚡"],["test","按鍵測試","▣"],["profiles","設定檔","💾"]];
+const ICONS={
+  remap:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/>',
+  macros:'<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M10 8.6v6.8l5.4-3.4z"/>',
+  lighting:'<circle cx="12" cy="12" r="4"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M18 6l-1.4 1.4M7.4 16.6L6 18"/>',
+  custom:'<path d="M12 3.5a8.5 8.5 0 100 17c1.3 0 2-.8 2-1.8 0-1.4-1.2-1.5-1.2-2.6 0-.9.7-1.6 1.7-1.6H17a3.5 3.5 0 003.5-3.5C20.5 6.7 16.7 3.5 12 3.5z"/><path d="M7.6 11h.01M10 7.8h.01M14.4 7.8h.01"/>',
+  status:'<rect x="2.5" y="8" width="17" height="9" rx="2.5"/><path d="M21.5 11v3M6 12.5h6"/>',
+  test:'<rect x="4" y="4" width="16" height="16" rx="4.5"/><path d="M8.8 12.4l2.3 2.3 4.2-4.6"/>',
+  profiles:'<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>'};
+const icon=id=>{const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("class","ico");s.innerHTML=ICONS[id]||"";return s};
+const NAV=[["remap","按鍵重設"],["macros","巨集"],["lighting","燈效"],["custom","自訂燈光"],["status","裝置狀態"],["test","按鍵測試"],["profiles","設定檔"]];
 
 function h(tag,props,...kids){
   const e=document.createElement(tag);
@@ -74,12 +83,20 @@ function updateHeader(){
   dev.textContent=S.st?.connected?"B87 · USB 已連線":"B87 · USB 未連線";
   pw.textContent=S.st?.battery!=null?`電量 ${S.st.battery}% · Windows 最近回報`:"電量尚未取得";
 }
+// 在 Tauri 視窗（無系統標題列）中，拖曳區與視窗控制鍵覆蓋在版面最上方；一般瀏覽器不出現
+function titlebar(){
+  const w=window.__TAURI__?.window?.getCurrentWindow?.();if(!w)return null;
+  document.documentElement.classList.add("tauri");
+  const c=(label,glyph,fn,cls)=>h("button",{class:cls,tabindex:-1,"aria-label":label,title:label,onclick:fn},glyph);
+  return h("div",{id:"titlebar","data-tauri-drag-region":""},
+    h("div",{class:"wc"},c("最小化","",()=>w.minimize()),c("最大化","",()=>w.toggleMaximize()),c("關閉","",()=>w.close(),"x")));
+}
 function shell(){
-  const app=document.getElementById("app");app.replaceChildren(
-    h("aside",null,h("div",{class:"brand"},h("b",null,"B87"),h("span",null,"鍵盤設定")),
-      h("nav",null,NAV.map(([id,name,icon])=>h("button",{id:"nav-"+id,onclick:()=>go(id),title:name},h("span",null,icon),h("span",null,name))))),
+  const app=document.getElementById("app");const tb=titlebar();if(tb&&!document.getElementById("titlebar"))app.before(tb);app.replaceChildren(
+    h("aside",{"data-tauri-drag-region":""},h("div",{class:"brand"},h("b",null,"B87"),h("span",null,"鍵盤設定")),
+      h("nav",null,NAV.map(([id,name])=>h("button",{id:"nav-"+id,onclick:()=>go(id),title:name},icon(id),h("span",null,name))))),
     h("main",null,
-      h("header",null,h("div",null,h("b",{id:"dev"},"B87 · 讀取中"),h("small",{id:"pw"},"")),btn("重新讀取",()=>refresh())),
+      h("header",{"data-tauri-drag-region":""},h("div",null,h("b",{id:"dev"},"B87 · 讀取中"),h("small",{id:"pw"},"")),btn("重新讀取",()=>refresh())),
       h("div",{id:"body"}),h("footer",{id:"msg"},"就緒")));
 }
 const PAGES={};
