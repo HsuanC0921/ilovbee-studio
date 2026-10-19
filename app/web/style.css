@@ -61,3 +61,11 @@ html.tauri aside{background:transparent;padding-top:12px}
 html.tauri main{height:calc(100vh - 8px);margin-top:8px;background:rgba(251,252,253,.82);border-top:1px solid rgba(0,0,0,.08);border-left:1px solid rgba(0,0,0,.08);border-radius:10px 0 0 0}
 html.tauri header{padding-right:150px;border-bottom:0}
 html.tauri .card{background:rgba(255,255,255,.9)}
+/* 逐鍵行為預覽 */
+.kfx1{animation:kfx-blink var(--kfx-rate,1.4s) steps(1) infinite}
+.kfx2{animation:kfx-breath var(--kfx-rate,1.4s) ease-in-out infinite}
+.kfx3{animation:kfx-rainbow calc(var(--kfx-rate,1.4s) * 3) linear infinite}
+@keyframes kfx-blink{50%{opacity:.2}}
+@keyframes kfx-breath{50%{opacity:.15}}
+@keyframes kfx-rainbow{to{filter:hue-rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.kfx1,.kfx2,.kfx3{animation:none;outline:2px dashed currentColor;outline-offset:-4px}}

@@ -27,6 +27,11 @@ void Check(bool result,string name){if(!result)throw new Exception(name);Console
 void Reject(Action action,string name){try{action();}catch(ArgumentException){Check(true,name);return;}catch(InvalidDataException){Check(true,name);return;}throw new Exception("Unexpected acceptance: "+name);}
 Check(Convert.ToHexString(NativeHid.Packet(0x83,0,416).AsSpan(0,8))=="068300000100A001","HID query header");
 Reject(()=>NativeHid.Packet(0x83,0,513),"oversized packet");
+{var kf=new byte[LedFrame.Bytes];var kx=new byte[LedFrame.Keys];for(int s=0;s<4;s++){LedFrame.Set(kf,s,200,0,0);kx[s]=(byte)s;}
+ var ka=LedFrame.Animate(kf,kx,0.4/0.7,2);   // 速度 2＝0.7 Hz；t 落在第 0.4 圈：閃爍亮、呼吸接近最亮
+ Check(ka[0]==200&&ka[3]==200&&ka[6]>150&&ka[6]<200&&kf[6]==200,"key fx static/blink on/breathe; source untouched");
+ var kb=LedFrame.Animate(kf,kx,0.6/0.7,2);Check(kb[3]==0&&kb[4]==0,"key blink off in second half");
+ Check(Math.Max(ka[9],Math.Max(ka[10],ka[11]))==200,"key rainbow keeps brightness");}
 Check(Convert.ToHexString(NativeHid.Packet(0x0a,0,ColorTable.Bytes).AsSpan(0,8))=="060A00000100A401","color table header matches vendor");
 {var t=ColorTable.Default();Check(Convert.ToHexString(ColorTable.Custom(t,0))=="000000"&&Convert.ToHexString(ColorTable.Custom(t,2))=="FF0000"&&t[2*21+20]==0xFF,"default color table");
  ColorTable.SetCustom(t,2,new byte[]{0,0,0xCC});Check(t[42]==0&&t[44]==0xCC&&t[45]==0,"custom color only touches slot 0");Reject(()=>ColorTable.SetCustom(t,0,new byte[3]),"mode 0 has no color");}

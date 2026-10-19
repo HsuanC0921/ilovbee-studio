@@ -49,7 +49,7 @@ internal sealed class Api {
                 case "POST /api/schemes/rename":{using var d=Doc(r);int i=Index(d,SchemeLibrary.Items.Count);SchemeLibrary.Rename(i,Str(d,"name"));return Ok();}
                 case "POST /api/schemes/import":{var s=JsonSerializer.Deserialize(r.Body,AppJson.Default.Scheme)??throw new ArgumentException("無效的方案檔。");var made=SchemeLibrary.Create(s.Name??"",SchemeLibrary.Decode(s));SchemeLibrary.Items.Add(made);SchemeLibrary.Save();return Ok();}
                 case "GET /api/schemes/export":{int i=int.Parse(r.Query.Replace("index=",""));if(i<0||i>=SchemeLibrary.Items.Count)throw new ArgumentException("沒有這個方案。");return Raw(JsonSerializer.SerializeToUtf8Bytes(SchemeLibrary.Items[i],AppJson.Default.Scheme));}
-                case "POST /api/layouts/put":{using var d=Doc(r);LightLayoutLibrary.Put(Str(d,"name"),Convert.FromHexString(Str(d,"frame")));return Ok();}
+                case "POST /api/layouts/put":{using var d=Doc(r);LightLayoutLibrary.Put(Str(d,"name"),Convert.FromHexString(Str(d,"frame")),d.RootElement.TryGetProperty("fx",out var fx)?Convert.FromHexString(fx.GetString()??""):null);return Ok();}
                 case "POST /api/layouts/delete":{using var d=Doc(r);LightLayoutLibrary.Items.RemoveAll(l=>l.Name==Str(d,"name"));LightLayoutLibrary.Save();return Ok();}
                 case "GET /api/live":{var c=LiveConfig.Load();return Json(w=>{w.WriteStartObject();w.WriteString("mode",c.Mode);w.WriteNumber("style",c.Style);w.WriteNumber("gain",c.Gain);w.WriteNumber("colormode",c.ColorMode);w.WriteNumber("colordir",c.ColorDir);w.WriteStartArray("colors");foreach(var col in c.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("status",live.Status);w.WriteEndObject();});}
                 case "POST /api/live":return SetLive(Doc(r));
@@ -93,7 +93,7 @@ internal sealed class Api {
             w.WritePropertyName("macros");w.WriteRawValue(JsonSerializer.SerializeToUtf8Bytes(MacroLibrary.Items,AppJson.Default.ListMacro),true);
             w.WriteStartArray("schemes");foreach(var s in SchemeLibrary.Items)w.WriteStringValue(s.Name);w.WriteEndArray();
             w.WritePropertyName("layouts");w.WriteRawValue(JsonSerializer.SerializeToUtf8Bytes(LightLayoutLibrary.Items,AppJson.Default.ListLightLayout),true);
-            w.WriteStartObject("live");w.WriteString("mode",cfg.Mode);w.WriteNumber("style",cfg.Style);w.WriteNumber("gain",cfg.Gain);w.WriteNumber("colormode",cfg.ColorMode);w.WriteNumber("colordir",cfg.ColorDir);w.WriteStartArray("colors");foreach(var col in cfg.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("frame",Convert.ToHexString(cfg.Frame));w.WriteString("status",live.Status);
+            w.WriteStartObject("live");w.WriteString("mode",cfg.Mode);w.WriteNumber("style",cfg.Style);w.WriteNumber("gain",cfg.Gain);w.WriteNumber("colormode",cfg.ColorMode);w.WriteNumber("colordir",cfg.ColorDir);w.WriteStartArray("colors");foreach(var col in cfg.Colors)w.WriteStringValue(col);w.WriteEndArray();w.WriteString("frame",Convert.ToHexString(cfg.Frame));w.WriteString("fx",Convert.ToHexString(cfg.Fx));w.WriteNumber("fxspeed",cfg.FxSpeed);w.WriteStartArray("effects");foreach(var n in LedFrame.KeyEffects)w.WriteStringValue(n);w.WriteEndArray();w.WriteString("status",live.Status);
             w.WriteStartArray("styles");foreach(var s in LedFrame.MusicStyles)w.WriteStringValue(s);w.WriteEndArray();w.WriteEndObject();
             w.WriteEndObject();
         });
@@ -141,6 +141,8 @@ internal sealed class Api {
             if(e.TryGetProperty("colordir",out var cd))c.ColorDir=Math.Clamp(cd.GetInt32(),0,3);
             if(e.TryGetProperty("colors",out var cl)){var l=cl.EnumerateArray().Select(x=>x.GetString()??"").Where(x=>x.Length==6).Select(x=>Convert.ToHexString(Convert.FromHexString(x))).Take(MusicColor.MaxStops).ToArray();if(l.Length>0)c.Colors=l;}
             if(e.TryGetProperty("frame",out var f)&&f.GetString() is {Length:LedFrame.Bytes*2} hex)c.Frame=Convert.FromHexString(hex);
+            if(e.TryGetProperty("fx",out var x)&&x.GetString() is {Length:LedFrame.Keys*2} fxHex)c.Fx=Convert.FromHexString(fxHex).Select(b=>(byte)Math.Min((int)b,LedFrame.KeyEffects.Length-1)).ToArray();
+            if(e.TryGetProperty("fxspeed",out var fs))c.FxSpeed=Math.Clamp(fs.GetInt32(),1,4);
             c.Save();
         }
         applyLive();

@@ -17,6 +17,24 @@ public static class LedFrame {
     }
     /// <summary>B87 的六排按鍵：0＝F 列 … 5＝空白鍵列。</summary>
     public static int Row(PhysicalKey k)=>Math.Clamp((int)Math.Round((k.Y-38)/43.0),0,5);
+    /// <summary>逐鍵行為（存在 fx[slot]）：0 恆亮、1 閃爍、2 呼吸、3 彩虹。</summary>
+    public static readonly string[] KeyEffects={"恆亮","閃爍","呼吸","彩虹"};
+    static readonly double[] Rate={0,.4,.7,1.1,1.6};   // 速度 1..4 對應每秒循環次數
+    /// <summary>依逐鍵行為算出時間 t（秒）的畫面；彩虹的亮度取原色最亮的通道。</summary>
+    public static byte[] Animate(byte[] frame,byte[] fx,double t,int speed){
+        var f=(byte[])frame.Clone();double w=t*Rate[Math.Clamp(speed,1,4)],ph=w-Math.Floor(w);
+        double breath=.5-.5*Math.Cos(2*Math.PI*w);
+        var (hr,hg,hb)=Hsv(w*120,1,1);
+        for(int s=0;s<Math.Min(Keys,fx.Length);s++){
+            int o=s*3;
+            switch(fx[s]){
+                case 1:if(ph>=.5)f[o]=f[o+1]=f[o+2]=0;break;
+                case 2:for(int i=0;i<3;i++)f[o+i]=(byte)Math.Round(f[o+i]*breath);break;
+                case 3:{double v=Math.Max(f[o],Math.Max(f[o+1],f[o+2]))/255.0;f[o]=(byte)Math.Round(hr*v);f[o+1]=(byte)Math.Round(hg*v);f[o+2]=(byte)Math.Round(hb*v);break;}
+            }
+        }
+        return f;
+    }
     public static readonly string[] MusicStyles={"頻譜柱","鏡像頻譜","瀑布","低頻脈衝","漣漪","能量彩虹","音量計","峰值保持","星空","火焰","對角掃描","橫向電平"};
 }
 /// <summary>音樂燈效的配色。Mode 0＝彩虹混色（各樣式自己算色相）；Mode 1＝自訂配色：Stops 為 1–6 個顏色，
@@ -108,7 +126,8 @@ public static class KeyLayout {
 public sealed class LiveLights : IDisposable {
     readonly KeyboardService service;readonly IReadOnlyList<PhysicalKey> keys;
     readonly Thread thread;readonly AutoResetEvent wake=new(false);volatile bool stop;
-    volatile byte[]? still;AudioLoopback? audio;
+    volatile byte[]? still,fx;AudioLoopback? audio;
+    public volatile int FxSpeed=2;
     public double Gain{get;set;}=40;public volatile int Style;public volatile MusicColor Color=MusicColor.Mix;
     public bool Music=>audio!=null;
     public string? Error{get;private set;}
@@ -116,7 +135,7 @@ public sealed class LiveLights : IDisposable {
         this.service=service;this.keys=keys;still=frame;if(frame==null)audio=new AudioLoopback();
         thread=new Thread(Loop){IsBackground=true,Name="live-lights"};thread.Start();
     }
-    public void Show(byte[] frame){if(frame.Length!=LedFrame.Bytes)throw new ArgumentException("無效的燈效框格。");still=frame;wake.Set();}
+    public void Show(byte[] frame,byte[]? effects=null){if(frame.Length!=LedFrame.Bytes)throw new ArgumentException("無效的燈效框格。");fx=effects!=null&&effects.Any(b=>b!=0)?effects:null;still=frame;wake.Set();}
     void Loop(){
         var level=new float[LedFrame.Bands];var viz=new MusicVisualizer(keys);byte[]? sent=null;var sw=System.Diagnostics.Stopwatch.StartNew();
         while(!stop){
@@ -127,7 +146,11 @@ public sealed class LiveLights : IDisposable {
                     var frame=viz.Render(Style,level,sw.Elapsed.TotalSeconds,Color);
                     if(sent==null || !frame.AsSpan().SequenceEqual(sent)){service.SendFrame(frame);sent=frame;}
                     Error=audio.Error;Thread.Sleep(33);   // 每秒約 30 格；送太快會擠滿鍵盤的 USB 通道
-                }else{service.SendFrame(still!);Error=null;wake.WaitOne(1000);}
+                }else if(fx is {} effects){   // 有逐鍵行為時約 30 fps 動畫
+                    var frame=LedFrame.Animate(still!,effects,sw.Elapsed.TotalSeconds,FxSpeed);
+                    if(sent==null || !frame.AsSpan().SequenceEqual(sent)){service.SendFrame(frame);sent=frame;}
+                    Error=null;wake.WaitOne(33);
+                }else{service.SendFrame(still!);sent=null;Error=null;wake.WaitOne(1000);}
             }catch(Exception e){Error=e.Message;Thread.Sleep(1000);try{service.Scan();}catch(Exception){}}
         }
     }

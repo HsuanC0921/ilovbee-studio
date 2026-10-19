@@ -1,6 +1,6 @@
 // 自訂燈光：逐鍵上色、音樂律動、配置庫（由常駐程式持續送出畫面）
-const FRAME_BYTES=126*3;
-const cust={frame:null,paint:"#ff4000",gain:40,style:0,timer:0,cmode:0,cdir:0,colors:["#ff2060","#20c0ff"]};
+const FRAME_BYTES=126*3,FX_BYTES=126;
+const cust={frame:null,fx:null,fxsel:0,fxspeed:2,paint:"#ff4000",gain:40,style:0,timer:0,cmode:0,cdir:0,colors:["#ff2060","#20c0ff"]};
 function hsvRgb(hh,s,v){hh=((hh%360)+360)%360/60;const c=v*s,x=c*(1-Math.abs(hh%2-1)),m=v-c,i=Math.floor(hh);
   const [r,g,b]=[[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][i%6];return [r+m,g+m,b+m].map(z=>Math.round(z*255))}
 const rowOf=k=>Math.min(5,Math.max(0,Math.round((k.Y-38)/43)));
@@ -8,19 +8,21 @@ const toHex6=(r,g,b)=>[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("");
 function initCustom(){
   if(cust.frame)return;
   const saved=S.st.live.frame;const lib=S.st.layouts[0]?.Frame;
-  cust.frame=unhex(saved&&/[1-9A-F]/.test(saved)?saved:(lib||"0".repeat(FRAME_BYTES*2)));
+  const useSaved=saved&&/[1-9A-F]/.test(saved);
+  cust.frame=unhex(useSaved?saved:(lib||"0".repeat(FRAME_BYTES*2)));
+  cust.fx=unhex(useSaved?S.st.live.fx:(S.st.layouts[0]?.Fx||"0".repeat(FX_BYTES*2)));cust.fxspeed=S.st.live.fxspeed;
   cust.gain=S.st.live.gain;cust.style=S.st.live.style;cust.cmode=S.st.live.colormode;cust.cdir=S.st.live.colordir;cust.colors=S.st.live.colors.map(c=>"#"+c);
 }
 async function setLive(mode){
   await run("正在傳給常駐程式……",async()=>{
-    await api("/api/live",{mode,style:cust.style,gain:cust.gain,frame:hex(cust.frame)});await load();go("custom");
+    await api("/api/live",{mode,style:cust.style,gain:cust.gain,frame:hex(cust.frame),fx:hex(cust.fx),fxspeed:cust.fxspeed});await load();go("custom");
     say(mode==="off"?"已停止即時燈效並還原原本的模式。":mode==="music"?"音樂律動執行中。播放任何聲音即可看到效果。":"自訂燈光已送到鍵盤。");
   });
 }
 // 只更新畫面（模式維持伺服器上的現況）；自訂燈光執行中時會立刻顯示在鍵盤上
 function pushFrame(){
   clearTimeout(cust.timer);
-  cust.timer=setTimeout(()=>api("/api/live",{mode:"keep",frame:hex(cust.frame)}).catch(e=>say(e.message,true)),120);
+  cust.timer=setTimeout(()=>api("/api/live",{mode:"keep",frame:hex(cust.frame),fx:hex(cust.fx),fxspeed:cust.fxspeed}).catch(e=>say(e.message,true)),120);
 }
 // 樣式／靈敏度同樣只送變更的欄位，不改模式
 const tune=(o,msg)=>api("/api/live",{mode:"keep",...o}).then(()=>msg&&say(msg)).catch(e=>say(e.message,true));
@@ -48,25 +50,30 @@ PAGES.custom=body=>{
   // 逐鍵上色
   const buttons=new Map();
   const paintKey=k=>{const b=buttons.get(k.Id),o=k.Slot*3,[r,g,bl]=[cust.frame[o],cust.frame[o+1],cust.frame[o+2]];
-    b.style.background=`rgb(${r},${g},${bl})`;b.style.color=(r*.3+g*.6+bl*.1)>140?"#111":"#fff";b.style.borderColor="#5a6270"};
+    b.style.background=`rgb(${r},${g},${bl})`;b.style.color=(r*.3+g*.6+bl*.1)>140?"#111":"#fff";b.style.borderColor="#5a6270";
+    b.classList.remove("kfx1","kfx2","kfx3");if(cust.fx[k.Slot])b.classList.add("kfx"+cust.fx[k.Slot]);b.style.setProperty("--kfx-rate",[0,2.5,1.4,.9,.6][cust.fxspeed]+"s")};
   const kb=keyboardView((b,k)=>{b.textContent=k.Name.length>5?k.Name.slice(0,4):k.Name;b.style.fontSize="9px";buttons.set(k.Id,b);
-    b.onclick=()=>{const rgb=unhex(cust.paint.slice(1));cust.frame.set(rgb,k.Slot*3);paintKey(k);pushFrame()}});
+    b.onclick=()=>{const rgb=unhex(cust.paint.slice(1));cust.frame.set(rgb,k.Slot*3);cust.fx[k.Slot]=cust.fxsel;paintKey(k);pushFrame()}});
   S.keys.forEach(k=>{if(buttons.has(k.Id))paintKey(k)});
-  const fill=fn=>{S.keys.forEach(k=>{if(!buttons.has(k.Id))return;cust.frame.set(fn(k),k.Slot*3);paintKey(k)});pushFrame()};
+  const each=fn=>{S.keys.forEach(k=>{if(buttons.has(k.Id)){fn(k);paintKey(k)}});pushFrame()};
+  const fill=fn=>each(k=>cust.frame.set(fn(k),k.Slot*3));
+  const fxsel=h("select",{onchange:()=>{cust.fxsel=+fxsel.value}},S.st.live.effects.map((n,i)=>h("option",{value:i},n)));fxsel.value=cust.fxsel;
+  const fxspeed=h("input",{type:"range",min:1,max:4,step:1,value:cust.fxspeed,title:"閃爍／呼吸／彩虹的速度",onchange:()=>{cust.fxspeed=+fxspeed.value;each(()=>{})}});
   const color=h("input",{type:"color",value:cust.paint,oninput:()=>{cust.paint=color.value}});
-  body.append(card(sub("逐鍵顏色"),muted("先選顏色，再點按鍵上色。自訂燈光執行中時，變更會立即顯示在鍵盤上。"),
+  body.append(card(sub("逐鍵顏色"),muted("先選顏色與行為，再點按鍵。每顆鍵可各自恆亮、閃爍、呼吸或彩虹循環。自訂燈光執行中時，變更會立即顯示在鍵盤上。"),
     h("div",{class:"row",style:{alignItems:"flex-start",gap:"24px"}},h("div",{style:{flex:1,minWidth:"320px"}},kb),
-      h("div",{style:{display:"flex",flexDirection:"column",gap:"8px"}},color,
+      h("div",{style:{display:"flex",flexDirection:"column",gap:"8px",width:"170px"}},h("label",null,"顏色"),color,h("label",null,"行為"),fxsel,h("label",null,"動態速度"),fxspeed,
+        btn("全部套用此行為",()=>each(k=>{cust.fx[k.Slot]=cust.fxsel})),
         btn("全部填入此色",()=>fill(()=>unhex(cust.paint.slice(1)))),
         btn("彩虹",()=>fill(k=>hsvRgb((k.X-20)/760*300,1,1))),
         btn("依排漸層",()=>fill(k=>hsvRgb(rowOf(k)*50,1,1))),
-        btn("全部清除",()=>fill(()=>[0,0,0]))))));
+        btn("全部清除",()=>each(k=>{cust.frame.set([0,0,0],k.Slot*3);cust.fx[k.Slot]=0}))))));
 
   // 配置庫
   const layouts=S.st.layouts,sel=h("select",null,h("option",{value:""},"選擇配置"),layouts.map((l,i)=>h("option",{value:i},l.Name)));
   const name=h("input",{type:"text",maxlength:20,placeholder:"配置名稱"});
   body.append(card(sub(`燈光配置（${layouts.length}／20）`),
-    row(sel,btn("載入",()=>{if(sel.value==="")return;cust.frame=unhex(layouts[+sel.value].Frame);pushFrame();go("custom")}),
+    row(sel,btn("載入",()=>{if(sel.value==="")return;const l=layouts[+sel.value];cust.frame=unhex(l.Frame);cust.fx=unhex(l.Fx||"0".repeat(FX_BYTES*2));pushFrame();go("custom")}),
       btn("刪除",()=>run("正在刪除……",async()=>{if(sel.value==="")return;await api("/api/layouts/delete",{name:layouts[+sel.value].Name});await load();go("custom")}))),
-    row(name,btn("儲存目前顏色",()=>run("正在儲存……",async()=>{await api("/api/layouts/put",{name:name.value.trim()||"配置"+(layouts.length+1),frame:hex(cust.frame)});await load();go("custom");say("已儲存燈光配置。")})))));
+    row(name,btn("儲存目前顏色",()=>run("正在儲存……",async()=>{await api("/api/layouts/put",{name:name.value.trim()||"配置"+(layouts.length+1),frame:hex(cust.frame),fx:hex(cust.fx)});await load();go("custom");say("已儲存燈光配置。")})))));
 };

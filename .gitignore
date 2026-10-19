@@ -11,3 +11,4 @@ diagnostics/
 last-error.txt
 ui/target/
 work/
+ui/gen/
