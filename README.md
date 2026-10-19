@@ -9,7 +9,7 @@ English · [繁體中文](README.zh-TW.md)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D4)
 ![.NET](https://img.shields.io/badge/.NET-10%20Native%20AOT-512BD4)
 ![Tauri](https://img.shields.io/badge/shell-Tauri%202-24C8DB)
-![Status](https://img.shields.io/badge/status-personal%20project-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 </div>
 
@@ -186,4 +186,4 @@ This is an independent personal project. It is not affiliated with or endorsed b
 
 ## License
 
-No license has been chosen yet. Until one is added, all rights are reserved by the author.
+Released under the [MIT License](LICENSE).
