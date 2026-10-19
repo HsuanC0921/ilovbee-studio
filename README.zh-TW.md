@@ -9,7 +9,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D4)
 ![.NET](https://img.shields.io/badge/.NET-10%20Native%20AOT-512BD4)
 ![Tauri](https://img.shields.io/badge/shell-Tauri%202-24C8DB)
-![Status](https://img.shields.io/badge/status-personal%20project-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 </div>
 
@@ -201,4 +201,4 @@ dotnet run --project tests/Checks.csproj -c Release
 
 ## 授權
 
-目前尚未選定授權條款。在加入授權之前，作者保留所有權利。
+以 [MIT 授權](LICENSE) 釋出。
