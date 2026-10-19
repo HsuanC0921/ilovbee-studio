@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><TreatWarningsAsErrors>true</TreatWarningsAsErrors><EnableNETAnalyzers>true</EnableNETAnalyzers></PropertyGroup>
-  <ItemGroup><Compile Include="../src/Hardware.cs" Link="Hardware.cs" /><Compile Include="../src/KeyActions.cs" Link="KeyActions.cs" /><Compile Include="../src/MappingEditor.cs" Link="MappingEditor.cs" /><Compile Include="../src/WindowsBattery.cs" Link="WindowsBattery.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../src/Hardware.cs" Link="Hardware.cs" /><Compile Include="../src/KeyActions.cs" Link="KeyActions.cs" /><Compile Include="../src/MappingEditor.cs" Link="MappingEditor.cs" /><Compile Include="../src/Macros.cs" Link="Macros.cs" /><Compile Include="../src/WindowsBattery.cs" Link="WindowsBattery.cs" /></ItemGroup>
 </Project>

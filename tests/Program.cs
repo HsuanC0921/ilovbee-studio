@@ -45,4 +45,14 @@ Reject(()=>editor.Assign(0,59,KeyActions.Code(7)),"FN protected");
 Reject(()=>editor.Assign(3,1,KeyActions.Code(7)),"draft layer bound");
 editor.Assign(0,78,KeyActions.Code(7,8));var saved=MappingEditor.Clone(editor.Draft);editor.Load(baseline);editor.Resume(saved);Check(editor.ChangeCount==1,"resume saved draft");
 Check(KeyActions.Decode(KeyActions.Code(4,5))=="Ctrl＋Alt＋A","custom chord label");
+// 原廠實機封包（Frida 記錄）：T1＝A,B；T2＝LShift+C。
+Macro Mac(string n,params (byte c,bool up,int d)[] e)=>new(n,e.Select(x=>new MacroEvent(x.c,x.up,x.d)).ToList());
+var t1=Mac("T1",(4,false,10),(4,true,100),(5,false,10),(5,true,0));var t2=Mac("T2",(0xE1,false,10),(6,false,10),(6,true,30),(0xE1,true,0));
+var t1Body="0454003100"+"00000A04"+"80006404"+"00000A05"+"80000005";
+Check(Convert.ToHexString(MacroCodec.Build(new[]{t1}))=="04001500"+t1Body,"vendor single-macro layout");
+Check(Convert.ToHexString(MacroCodec.Build(new[]{t2,t1}))=="080015001D001500"+"0454003200"+"10000AE1"+"00000A06"+"80001E06"+"900000E1"+t1Body,"vendor two-macro layout");
+Check(Convert.ToHexString(MacroCodec.KeyCode(1))=="03010101","macro key code");
+Reject(()=>MacroCodec.Validate(new[]{Mac("",(4,false,0))}),"empty macro name");
+Reject(()=>MacroCodec.Validate(Enumerable.Range(0,9).Select(i=>Mac("m"+i,(4,false,0))).ToList()),"macro count limit");
+Reject(()=>MacroCodec.Validate(Enumerable.Range(0,8).Select(i=>Mac("m"+i,Enumerable.Range(0,60).Select(_=>(byte)4).Select(c=>(c,false,0)).ToArray())).ToList()),"macro capacity limit");
 Console.WriteLine($"{passed} passed, 0 failed");

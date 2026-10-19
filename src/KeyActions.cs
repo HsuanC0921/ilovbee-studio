@@ -28,6 +28,7 @@ public static class KeyActions {
     }
     public static string Decode(byte[] b) {
         if(b.Length!=4)return "未知";
+        if(MacroCodec.IsMacroKey(b))return b[3]<MacroLibrary.Items.Count?"巨集："+MacroLibrary.Items[b[3]].Name:$"巨集 #{b[3]+1}";
         var named=All().FirstOrDefault(x=>x.Bytes.SequenceEqual(b));if(named!=null)return named.Name;
         if(b[0]==0 && b[2]==0) {
             string key=b[3] switch{0x35=>"Grave",0x2d=>"-",0x2e=>"=",0x2f=>"[",0x30=>"]",0x31=>"Backslash",0x33=>";",0x34=>"Quote",0x36=>",",0x37=>".",0x38=>"/",0x39=>"Caps Lock",0x46=>"Print Screen",0x47=>"Scroll Lock",0x48=>"Pause",_=>$"HID {b[3]:X2}"};

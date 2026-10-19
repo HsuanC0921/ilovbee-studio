@@ -45,7 +45,7 @@ public sealed partial class MainWindow : Window {
     readonly HashSet<VirtualKey> pressed=new();
     readonly Dictionary<VirtualKey,long> released=new();
     readonly TextBox test=new(){AcceptsReturn=true,IsReadOnly=true,MinHeight=260,TextWrapping=TextWrapping.Wrap,FontFamily=new FontFamily("Cascadia Mono"),PlaceholderText="點入這裡，再按實體鍵盤。"};
-    readonly List<KeyAction> actions=KeyActions.All();
+    List<KeyAction> actions=KeyActions.All();
     ComboBox? actionBox;
     TextBlock? currentKey;
     Button? applyButton;
@@ -79,7 +79,7 @@ public sealed partial class MainWindow : Window {
         AppWindow.TitleBar.ButtonHoverBackgroundColor=ColorHelper.FromArgb(255,227,231,237);
         titleBar.SizeChanged+=(_,_)=>titleBar.Padding=new Thickness(20,0,AppWindow.TitleBar.RightInset/(titleBar.XamlRoot?.RasterizationScale??1)+16,0);
         var brand=new StackPanel{Margin=new Thickness(16,12,12,24),Spacing=12};var brandText=new StackPanel{Spacing=2};brandText.Children.Add(new TextBlock{Text="B87",FontSize=22,FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,Foreground=Ink});brandText.Children.Add(T("鍵盤設定",12,Muted));brand.Children.Add(brandText);sidebar.Children.Add(brand);
-        var names=new[]{("按鍵重設",Symbol.Keyboard),("燈效",Symbol.Highlight),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
+        var names=new[]{("按鍵重設",Symbol.Keyboard),("巨集",Symbol.Edit),("燈效",Symbol.Highlight),("裝置狀態",Symbol.Link),("按鍵測試",Symbol.TouchPointer),("設定檔",Symbol.Save)};
         foreach(var n in names){
             var icon=new SymbolIcon(n.Item2){Foreground=Muted,Width=18,Height=18};var label=T(n.Item1,14,Ink);
             var content=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12,VerticalAlignment=VerticalAlignment.Center};content.Children.Add(icon);content.Children.Add(label);
@@ -147,9 +147,10 @@ public sealed partial class MainWindow : Window {
     void UpdateNavigation(){
         foreach(var pair in navigationButtons){bool active=pair.Key==page;pair.Value.Background=active?Brush("#DCEAFF"):new SolidColorBrush(Colors.Transparent);pair.Value.Foreground=active?Blue:Ink;var visual=navigationItems[pair.Key];visual.Label.Foreground=active?Blue:Ink;visual.Label.FontWeight=active?Microsoft.UI.Text.FontWeights.SemiBold:Microsoft.UI.Text.FontWeights.Normal;visual.Icon.Foreground=active?Blue:Muted;}
     }
-    void Navigate(string name){lightTimer?.Stop();page=name;switch(name){case "按鍵重設":RemapPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
+    void Navigate(string name){lightTimer?.Stop();page=name;switch(name){case "按鍵重設":RemapPage();break;case "巨集":MacrosPage();break;case "燈效":LightingPage();break;case "裝置狀態":PowerPage();break;case "按鍵測試":TestPage();break;case "設定檔":ProfilesPage();break;default:ProfilesPage();break;}UpdateNavigation();}
     void RemapPage(){
         Heading("按鍵重設","自訂按鍵、媒體控制與組合快捷鍵。");
+        actions=KeyActions.All().Concat(MacroLibrary.Items.Select((m,i)=>new KeyAction("巨集："+m.Name,MacroCodec.KeyCode(i)))).ToList();
         body.Children.RemoveAt(1);body.Spacing=12;body.Margin=new Thickness(32,16,32,16);
         var toolbar=new Grid{ColumnSpacing=12};toolbar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});toolbar.ColumnDefinitions.Add(new(){Width=new GridLength(1,GridUnitType.Star)});toolbar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
         var layers=new ComboBox{ItemsSource=new[]{"預設層","FN1 層","FN2 層"},SelectedIndex=layer,Width=150};AutomationProperties.SetName(layers,"編輯層");layers.SelectionChanged+=(_,_)=>{layer=layers.SelectedIndex;RemapPage();};toolbar.Children.Add(layers);
@@ -232,6 +233,8 @@ public sealed partial class MainWindow : Window {
     }
     async Task ApplyDraft()=>await Run("正在儲存按鍵設定……",async()=>{
         var before=MappingEditor.Clone(editor.Baseline);var after=MappingEditor.Clone(editor.Draft);int count=editor.ChangeCount;
+        bool macroChanged=after.Any(p=>Enumerable.Range(0,104).Any(s=>MacroCodec.IsMacroKey(p.Value.AsSpan(s*4,4)) && !before[p.Key].AsSpan(s*4,4).SequenceEqual(p.Value.AsSpan(s*4,4))));
+        if(macroChanged){var items=MacroLibrary.Items.ToList();MacroCodec.Validate(items);if(after.Any(p=>Enumerable.Range(0,104).Any(s=>MacroCodec.IsMacroKey(p.Value.AsSpan(s*4,4)) && p.Value[s*4+3]>=items.Count)))throw new InvalidOperationException("按鍵指向不存在的巨集。");await Task.Run(()=>service.WriteMacros(MacroCodec.Build(items)));}
         await Task.Run(()=>service.ApplyMappings(before,after));maps.Clear();foreach(var map in after)maps[map.Key]=map.Value;editor.Load(maps);SaveDraft();RemapPage();Log($"已套用 {count} 顆按鍵");Message($"已儲存 {count} 顆按鍵的變更。");
     });
     async Task ExportDraft()=>await Run("正在匯出草稿……",async()=>{

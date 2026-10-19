@@ -121,11 +121,11 @@ public static class NativeHid {
         return reply.AsSpan(8,count).ToArray();
     }
     public static void Write(SafeFileHandle h,byte command,byte layer,byte[] data) {
-        if(!((command==3 && data.Length==416 && layer<=2) || (command==4 && data.Length==128 && layer==0)))
+        if(!((command==3 && data.Length==416 && layer<=2) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512)))
             throw new InvalidOperationException("未允許的設定寫入。");
         byte[] b=Packet(command,layer,data.Length);data.CopyTo(b,8);
         if(!HidD_SetFeature(h,b,b.Length)) throw new Win32Exception(Marshal.GetLastWin32Error(),"寫入失敗；備份仍保留。");
-        Thread.Sleep(80);
+        Thread.Sleep(command==5?200:80);
     }
 }
 public sealed class KeyboardService {
@@ -200,6 +200,11 @@ public sealed class KeyboardService {
                 throw new IOException("套用失敗，已還原原設定。",original);
             }
         }
+    }
+    /// <summary>寫入巨集緩衝區（指令 5）。原廠流程不讀回巨集，因此此處無法讀回驗證；先備份，且需在按鍵指向巨集之前寫入。</summary>
+    public void WriteMacros(byte[] buffer) {
+        if(buffer.Length<4 || buffer.Length>MacroCodec.MaxBytes) throw new ArgumentException("無效的巨集資料。");
+        lock(gate) { CheckConflict();using var h=Open();Backup("before-macro");NativeHid.Write(h,5,0,buffer); }
     }
     public void SetLights(byte[] expected,byte[] after) {
         if(expected.Length!=128 || after.Length!=128) throw new ArgumentException("無效的燈效設定。");
