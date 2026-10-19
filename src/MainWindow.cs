@@ -270,10 +270,15 @@ public sealed partial class MainWindow : Window {
     void AppendTest(string value){test.Text=string.Join(Environment.NewLine,(test.Text+$"{DateTime.Now:HH:mm:ss.fff}　{value}"+Environment.NewLine).Split(Environment.NewLine).TakeLast(150));test.SelectionStart=test.Text.Length;}
     void ProfilesPage(){
         Heading("設定檔與備份","匯出、還原與管理鍵盤設定。");
-        var row=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12};row.Children.Add(B("匯出完整設定",async()=>await ExportProfile()));row.Children.Add(B("從檔案還原",async()=>await RestoreProfile()));body.Children.Add(row);
-        body.Children.Add(B("立即建立完整備份",async()=>await Run("正在備份……",async()=>{string path=await Task.Run(()=>service.Backup("manual"));Message("已儲存："+path);ProfilesPage();})));Rule();body.Children.Add(T("自動備份",20));
-        string folder=Path.Combine(Store.Root,"backups");var files=Directory.Exists(folder)?Directory.GetFiles(folder,"*.json").OrderDescending().Select(Path.GetFileName).ToArray():Array.Empty<string>();body.Children.Add(new ListView{ItemsSource=files,MaxHeight=260,SelectionMode=ListViewSelectionMode.None});
-        body.Children.Add(B("開啟備份資料夾",()=>{Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}));body.Children.Add(T("變更設定前會自動建立備份，檔案儲存於本機。",12,Muted));
+        var actions=new StackPanel{Spacing=12};actions.Children.Add(Sub("匯出與還原"));
+        actions.Children.Add(Row(B("匯出完整設定",async()=>await ExportProfile()),B("從檔案還原",async()=>await RestoreProfile()),B("立即建立完整備份",async()=>await Run("正在備份……",async()=>{string path=await Task.Run(()=>service.Backup("manual"));Message("已儲存："+path);ProfilesPage();}))));
+        body.Children.Add(Card(actions));
+        string folder=Path.Combine(Store.Root,"backups");var files=Directory.Exists(folder)?Directory.GetFiles(folder,"*.json").OrderDescending().Select(Path.GetFileName).ToArray():Array.Empty<string>();
+        var backups=new StackPanel{Spacing=12};backups.Children.Add(Sub($"自動備份（{files.Length}）"));
+        backups.Children.Add(T("變更設定前會自動建立備份，檔案儲存於本機。",12,Muted));
+        backups.Children.Add(new ListView{ItemsSource=files,MaxHeight=260,SelectionMode=ListViewSelectionMode.None});
+        backups.Children.Add(B("開啟備份資料夾",()=>{Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}));
+        body.Children.Add(Card(backups));
     }
     async Task ExportProfile()=>await Run("正在讀取完整設定……",async()=>{
         var profile=await Task.Run(()=>service.Capture());var picker=new FileSavePicker{SuggestedFileName="B87-"+DateTime.Now.ToString("yyyyMMdd-HHmm")};picker.FileTypeChoices.Add("iLovbee 設定檔",new List<string>{".json"});WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));var file=await picker.PickSaveFileAsync();if(file==null){Message("已取消匯出。");return;}await File.WriteAllTextAsync(file.Path,JsonSerializer.Serialize(profile,Store.Json),Encoding.UTF8);Message("設定檔已匯出。");
