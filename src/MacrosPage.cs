@@ -15,7 +15,7 @@ public sealed partial class MainWindow {
         Heading("巨集","錄製或編輯按鍵序列，寫入鍵盤後，到「按鍵重設」把巨集指派給任一按鍵。");
         var lib=MacroLibrary.Items;macroSel=Math.Clamp(macroSel,0,Math.Max(0,lib.Count-1));
         var listBox=new ListView{ItemsSource=lib.Select(m=>m.Name).ToList(),SelectedIndex=lib.Count>0?macroSel:-1,MinHeight=60,MaxHeight=260};
-        listBox.SelectionChanged+=(_,_)=>{if(listBox.SelectedIndex>=0&&listBox.SelectedIndex!=macroSel){macroSel=listBox.SelectedIndex;MacrosPage();}};
+        listBox.SelectionChanged+=(_,_)=>{if(listBox.SelectedIndex>=0&&listBox.SelectedIndex!=macroSel){macroSel=listBox.SelectedIndex;DispatcherQueue.TryEnqueue(MacrosPage);}};
         var listPanel=new StackPanel{Spacing=12};listPanel.Children.Add(Sub($"巨集清單（{lib.Count}／{MacroCodec.MaxMacros}）"));listPanel.Children.Add(listBox);
         listPanel.Children.Add(Row(
             B("新增",()=>{if(lib.Count>=MacroCodec.MaxMacros){Message($"巨集最多 {MacroCodec.MaxMacros} 個。",true);return;}lib.Add(new Macro("巨集"+(lib.Count+1),new()));macroSel=lib.Count-1;MacroLibrary.Save();MacrosPage();}),
@@ -35,7 +35,7 @@ public sealed partial class MainWindow {
         int index=macroSel;var events=current.Events;
         void Commit(Macro m){MacroLibrary.Items[index]=m;MacroLibrary.Save();}
         var name=new TextBox{Text=current.Name,MaxLength=MacroCodec.MaxName,Width=260,Header="名稱",HorizontalAlignment=HorizontalAlignment.Left};
-        name.LostFocus+=(_,_)=>{if(name.Text.Length>0&&name.Text!=current.Name){Commit(current with{Name=name.Text});MacrosPage();}};
+        name.LostFocus+=(_,_)=>{if(name.Text.Length>0&&name.Text!=current.Name){Commit(current with{Name=name.Text});DispatcherQueue.TryEnqueue(MacrosPage);}};
         string Line(MacroEvent e)=>$"{(e.Up?"↑ 放開":"↓ 按下")}　{MacroCodec.KeyName(e.Code)}　　之後等待 {e.Delay} ms";
         var list=new ListView{ItemsSource=events.Select(Line).ToList(),MinHeight=140,MaxHeight=300};
         var delay=new NumberBox{Header="等待毫秒",Minimum=0,Maximum=100000,Value=10,SpinButtonPlacementMode=NumberBoxSpinButtonPlacementMode.Compact,Width=140};
@@ -76,5 +76,6 @@ public sealed partial class MainWindow {
         return panel;
     }
 }
+
 
 
