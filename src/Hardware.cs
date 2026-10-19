@@ -35,7 +35,7 @@ public static class Store {
     public static void Validate(DeviceProfile profile) {
         if (profile.Schema != 1 || profile.Device != "258A:0199" || profile.Release != "2010")
             throw new InvalidDataException("此設定檔不適用目前 B87 硬體版本。");
-        if (profile.Keymaps is null || profile.Keymaps.Count != 3 || !Enumerable.Range(0,3).All(profile.Keymaps.ContainsKey))
+        if (profile.Keymaps is null || profile.Keymaps.Count is not (3 or 4) || !Enumerable.Range(0,profile.Keymaps.Count).All(profile.Keymaps.ContainsKey))
             throw new InvalidDataException("設定檔必須包含完整三層按鍵映射。");
         foreach (var map in profile.Keymaps) {
             if (map.Value is null || map.Value.Length != 832 || Convert.FromHexString(map.Value).Length != 416)
@@ -121,7 +121,7 @@ public static class NativeHid {
         return reply.AsSpan(8,count).ToArray();
     }
     public static void Write(SafeFileHandle h,byte command,byte layer,byte[] data) {
-        if(!((command==3 && data.Length==416 && layer<=2) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512)))
+        if(!((command==3 && data.Length==416 && layer<=3) || (command==4 && data.Length==128 && layer==0) || (command==5 && layer==0 && data.Length>=4 && data.Length<=512)))
             throw new InvalidOperationException("未允許的設定寫入。");
         byte[] b=Packet(command,layer,data.Length);data.CopyTo(b,8);
         if(!HidD_SetFeature(h,b,b.Length)) throw new Win32Exception(Marshal.GetLastWin32Error(),"寫入失敗；備份仍保留。");
@@ -143,14 +143,14 @@ public sealed class KeyboardService {
         return NativeHid.Open(device.Path);
     }
     public byte[] ReadMap(int layer) {
-        if(layer<0 || layer>2)throw new ArgumentOutOfRangeException(nameof(layer));
+        if(layer<0 || layer>3)throw new ArgumentOutOfRangeException(nameof(layer));
         lock(gate) { using var h=Open();return NativeHid.Read(h,0x83,(byte)layer,416); }
     }
     public byte[] ReadLights() { lock(gate){using var h=Open();return NativeHid.Read(h,0x84,0,128);} }
     public PowerInfo ReadPower() { lock(gate){using var h=Open();var b=NativeHid.Read(h,0x87,0,2);return new(b[0],b[1],DateTimeOffset.Now);} }
     public DeviceProfile Capture() {
         lock(gate) {
-            var maps=Enumerable.Range(0,3).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
+            var maps=Enumerable.Range(0,4).ToDictionary(i=>i,i=>Convert.ToHexString(ReadMap(i)));
             return new(1,"258A:0199","2010",DateTimeOffset.Now,maps,Convert.ToHexString(ReadLights()));
         }
     }
@@ -184,7 +184,7 @@ public sealed class KeyboardService {
         }
     }
     public void Remap(int layer,int slot,byte[] expected,byte[] action) {
-        if(layer<0 || layer>2 || slot<0 || slot>=104 || action.Length!=4 || expected.Length!=416) throw new ArgumentException("無效的按鍵映射。");
+        if(layer<0 || layer>3 || slot<0 || slot>=104 || action.Length!=4 || expected.Length!=416) throw new ArgumentException("無效的按鍵映射。");
         lock(gate) {
             CheckConflict();using var h=Open();var before=NativeHid.Read(h,0x83,(byte)layer,416);
             if(!before.SequenceEqual(expected)) throw new IOException("鍵盤設定已在其他地方變更。請重新讀取後再套用。");

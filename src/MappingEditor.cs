@@ -13,9 +13,9 @@ public sealed class MappingEditor {
     public bool Changed(int layer,int slot)=>!Baseline[layer].AsSpan(slot*4,4).SequenceEqual(Draft[layer].AsSpan(slot*4,4));
     public static Dictionary<int,byte[]> Clone(Dictionary<int,byte[]> maps)=>maps.ToDictionary(p=>p.Key,p=>(byte[])p.Value.Clone());
     public void Load(Dictionary<int,byte[]> maps){Validate(maps);Baseline=Clone(maps);Draft=Clone(maps);undo.Clear();redo.Clear();}
-    public static void Validate(Dictionary<int,byte[]> maps){if(maps.Count!=3 || Enumerable.Range(0,3).Any(i=>!maps.TryGetValue(i,out var m) || m==null || m.Length!=416))throw new ArgumentException("必須包含完整三層按鍵設定。");}
+    public static void Validate(Dictionary<int,byte[]> maps){if(maps.Count!=4 || Enumerable.Range(0,4).Any(i=>!maps.TryGetValue(i,out var m) || m==null || m.Length!=416))throw new ArgumentException("必須包含完整四層按鍵設定。");}
     public void Assign(int layer,int slot,byte[] code){
-        if(layer<0 || layer>2 || slot<0 || slot>=104 || slot==59 || code.Length!=4)throw new ArgumentException("此按鍵無法指派。");
+        if(layer<0 || layer>3 || slot<0 || slot>=104 || slot==59 || code.Length!=4)throw new ArgumentException("此按鍵無法指派。");
         if(!Draft.ContainsKey(layer))throw new InvalidOperationException("請先讀取鍵盤。");
         if(Draft[layer].AsSpan(slot*4,4).SequenceEqual(code))return;
         undo.Push(Clone(Draft));if(undo.Count>100){var keep=undo.Take(100).Reverse().ToArray();undo.Clear();foreach(var item in keep)undo.Push(item);}redo.Clear();code.CopyTo(Draft[layer],slot*4);

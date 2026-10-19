@@ -153,7 +153,7 @@ public sealed partial class MainWindow : Window {
         actions=KeyActions.All().Concat(MacroLibrary.Items.Select((m,i)=>new KeyAction("巨集："+m.Name,MacroCodec.KeyCode(i)))).ToList();
         body.Children.RemoveAt(1);body.Spacing=12;body.Margin=new Thickness(32,16,32,16);
         var toolbar=new Grid{ColumnSpacing=12};toolbar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});toolbar.ColumnDefinitions.Add(new(){Width=new GridLength(1,GridUnitType.Star)});toolbar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
-        var layers=new ComboBox{ItemsSource=new[]{"預設層","FN1 層","FN2 層"},SelectedIndex=layer,Width=150};AutomationProperties.SetName(layers,"編輯層");layers.SelectionChanged+=(_,_)=>{layer=layers.SelectedIndex;RemapPage();};toolbar.Children.Add(layers);
+        var layers=new ComboBox{ItemsSource=new[]{"預設層","FN1 層","FN2 層","Tap 層"},SelectedIndex=layer,Width=150};AutomationProperties.SetName(layers,"編輯層");layers.SelectionChanged+=(_,_)=>{layer=layers.SelectedIndex;RemapPage();};toolbar.Children.Add(layers);
         var history=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8};Grid.SetColumn(history,1);
         undoButton=B("復原",()=>{editor.Undo();DraftChanged();});redoButton=B("重做",()=>{editor.Redo();DraftChanged();});history.Children.Add(undoButton);history.Children.Add(redoButton);toolbar.Children.Add(history);
         applyButton=B("套用變更",async()=>await ApplyDraft());applyButton.Style=(Style)Application.Current.Resources["AccentButtonStyle"];Grid.SetColumn(applyButton,2);toolbar.Children.Add(applyButton);body.Children.Add(toolbar);
@@ -198,7 +198,7 @@ public sealed partial class MainWindow : Window {
         try{editor.Assign(layer,selected.Slot,code);DraftChanged();Message("已加入變更，按「套用變更」儲存至鍵盤。");}catch(Exception e){Message(e.Message,true);}
     }
     void SaveDraft(){
-        if(editor.Baseline.Count!=3)return;
+        if(editor.Baseline.Count!=4)return;
         Store.Write("drafts","pending.json",new SavedDraft(editor.Baseline.ToDictionary(p=>p.Key,p=>Convert.ToHexString(p.Value)),editor.Draft.ToDictionary(p=>p.Key,p=>Convert.ToHexString(p.Value))));
     }
     void ResumeDraft(){
@@ -238,7 +238,7 @@ public sealed partial class MainWindow : Window {
         await Task.Run(()=>service.ApplyMappings(before,after));maps.Clear();foreach(var map in after)maps[map.Key]=map.Value;editor.Load(maps);SaveDraft();RemapPage();Log($"已套用 {count} 顆按鍵");Message($"已儲存 {count} 顆按鍵的變更。");
     });
     async Task ExportDraft()=>await Run("正在匯出草稿……",async()=>{
-        if(lights==null || editor.Draft.Count!=3)throw new InvalidOperationException("請先讀取鍵盤。");
+        if(lights==null || editor.Draft.Count!=4)throw new InvalidOperationException("請先讀取鍵盤。");
         var profile=new DeviceProfile(1,"258A:0199","2010",DateTimeOffset.Now,editor.Draft.ToDictionary(p=>p.Key,p=>Convert.ToHexString(p.Value)),Convert.ToHexString(lights));
         var picker=new FileSavePicker{SuggestedFileName="B87-草稿-"+DateTime.Now.ToString("yyyyMMdd-HHmm")};picker.FileTypeChoices.Add("iLovbee 設定檔",new List<string>{".json"});WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(this));var file=await picker.PickSaveFileAsync();if(file!=null){await File.WriteAllTextAsync(file.Path,JsonSerializer.Serialize(profile,Store.Json),Encoding.UTF8);Message("草稿已匯出，尚未寫入鍵盤。");}
     });
@@ -272,7 +272,7 @@ public sealed partial class MainWindow : Window {
     void TestUp(object sender,KeyRoutedEventArgs e){if(e.Key==VirtualKey.Tab)return;pressed.Remove(e.Key);released[e.Key]=Stopwatch.GetTimestamp();AppendTest($"放開 {e.Key}");e.Handled=true;}
     void AppendTest(string value){test.Text=string.Join(Environment.NewLine,(test.Text+$"{DateTime.Now:HH:mm:ss.fff}　{value}"+Environment.NewLine).Split(Environment.NewLine).TakeLast(150));test.SelectionStart=test.Text.Length;}
     void ProfilesPage(){
-        Heading("設定檔與備份","匯出、還原與管理鍵盤設定。");
+        Heading("設定檔與備份","匯出、還原與管理鍵盤設定。");SchemeCard();
         var actions=new StackPanel{Spacing=12};actions.Children.Add(Sub("匯出與還原"));
         actions.Children.Add(Row(B("匯出完整設定",async()=>await ExportProfile()),B("從檔案還原",async()=>await RestoreProfile()),B("立即建立完整備份",async()=>await Run("正在備份……",async()=>{string path=await Task.Run(()=>service.Backup("manual"));Message("已儲存："+path);ProfilesPage();}))));
         body.Children.Add(Card(actions));
