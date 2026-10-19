@@ -2,7 +2,7 @@
 
 # iLovbee Studio
 
-**A lightweight, open replacement for the discontinued iLovbee Keyboard app, for the BY Tech B87.**
+**A lightweight, open replacement for the discontinued iLovbee Keyboard app, built for the BY Tech B87 (and, in principle, keyboards on the same controller solution).**
 
 English · [繁體中文](README.zh-TW.md)
 
@@ -68,7 +68,11 @@ The interface is in Traditional Chinese. The vendor app is no longer updated. Th
 |---|---|---|
 | BY Tech B87 | `258A:0199` | `2010` |
 
-Other keyboards sold as "B87" may use different firmware and are **not** supported. The app refuses to write to any device that does not match exactly.
+In principle, iLovbee Studio works only with this keyboard. It may also work with keyboards built on the same controller and firmware solution, which speak the same protocol. Everything here was decoded and tested on one B87, and nothing has been verified on any other model.
+
+- Other keyboards sold as "B87" may use different firmware and are **not** supported.
+- The app refuses to write to any device whose USB ID and release do not match the table above exactly, including keyboards on the same solution.
+- To try another keyboard on the same solution, you have to change that check in the source yourself. Make a full backup first.
 
 ## Getting started
 
