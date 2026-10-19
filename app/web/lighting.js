@@ -111,6 +111,9 @@ PAGES.lighting=body=>{
   setSync();
   body.append(card(sub("鍵盤設定"),h("label",{class:"chk"},office,"辦公模式（防抖較長，減少連按誤觸；關閉為遊戲模式，反應最快）"),
     row(h("label",{class:"chk"},tapOn,"啟用 Tap"),h("label",null,"Tap 時間（預設 20）"),tapNum),setApply));
+  // 側邊指示燈：payload[26]（0＝亮、1＝滅）。與 Fn+Backspace 切換的是同一個欄位，勾選即套用
+  const sideOn=h("input",{type:"checkbox",checked:!!L&&L[26]===0,disabled:!L,onclick:()=>{const want=sideOn.checked;patchLights(want?"正在開啟側燈……":"正在關閉側燈……",a=>{a[26]=want?0:1},want?"側邊指示燈已開啟。":"側邊指示燈已關閉。")}});
+  body.append(card(sub("側邊指示燈"),h("label",{class:"chk"},sideOn,"顯示鍵盤兩側的指示燈"),muted("顏色由韌體固定（綠色），目前沒有可改色的設定欄位。")));
   body.append(card(sub("鍵盤快捷鍵"),row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Scroll Lock"),muted("切換主背光效果")),
     row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Backspace"),muted("切換整體 RGB 燈光（含側燈）"))));
 };
