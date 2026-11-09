@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "iLovbee Studio",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "identifier": "io.github.hsuanc0921.ilovbee-studio",
-  "build": { "frontendDist": "dist" },
+  "build": { "frontendDist": "../app/web" },
   "app": {
     "withGlobalTauri": true,
     "windows": [],

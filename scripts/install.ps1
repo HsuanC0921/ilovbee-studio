@@ -18,10 +18,10 @@ $markerName = '.ilovbee-studio-install.json'
 $productId = 'HsuanC0921.iLovbeeStudio'
 $stagingRoot = Join-Path $programs ('iLovbee Studio.installing-' + [guid]::NewGuid().ToString('N'))
 $oldRoot = Join-Path $programs ('iLovbee Studio.previous-' + [guid]::NewGuid().ToString('N'))
-$version = '0.3.4'
-$projectFile = Join-Path $projectRoot 'app\iLovbeeStudio.csproj'
+$version = '0.8.0'
+$projectFile = Join-Path $projectRoot 'Cargo.toml'
 if (Test-Path -LiteralPath $projectFile) {
-    $match = [regex]::Match((Get-Content -LiteralPath $projectFile -Raw), '<Version>([^<]+)</Version>')
+    $match = [regex]::Match((Get-Content -LiteralPath $projectFile -Raw), '(?m)^version\s*=\s*"([^"]+)"')
     if ($match.Success) { $version = $match.Groups[1].Value }
 }
 

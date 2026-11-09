@@ -7,7 +7,9 @@ function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
 PAGES.lighting=body=>{
   title(body,"燈效");
   const L=connected()?unhex(S.st.lights):null,names=Effects.Names,cells=lightCells();
-  const current=L&&L[10]<names.length?L[10]:-1;
+  // payload[9] 選擇背光配置；只有 0 才使用 payload[10] 的內建模式。
+  const current=L&&L[9]===0&&L[10]<names.length?L[10]:-1;
+  const currentName=L&&L[9]!==0?"鍵盤背光配置":current>=0?names[current]:"未知";
   let chosen=current>=0?current:1,level=4,speed=4,colorIndex=7,fixedColor=0;
   const storedLevel=m=>L&&Effects.hasBrightness(m)&&L[56+2*m]>=1&&L[56+2*m]<=4?L[56+2*m]:4;
   const storedSpeed=m=>L&&Effects.hasSpeed(m)&&(L[57+2*m]>>4)>=1&&(L[57+2*m]>>4)<=4?L[57+2*m]>>4:4;
@@ -56,7 +58,7 @@ PAGES.lighting=body=>{
     mixIn.checked=colorIndex===7;swatches.forEach((s,i)=>s.classList.toggle("on",colorIndex!==7&&i===colorIndex));
     const changed=chosen!==current||(hb&&level!==storedLevel(chosen))||(hs&&speed!==storedSpeed(chosen))||(hc&&colorIndex!==storedColor(chosen))||(hc&&custom!==customOf(chosen));
     applyBtn.disabled=S.busy||!L||!changed;
-    status.textContent=!L?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":chosen!==current?`示意圖僅供預覽 · 目前：${current>=0?names[current]:"未知"} → 套用後：${names[chosen]}`:"示意圖僅供預覽 · 有尚未套用的調整。";
+    status.textContent=!L?"示意圖僅供預覽；連接 USB 並讀取鍵盤後即可套用。":!changed?"示意圖僅供預覽 · 這是鍵盤目前使用的設定。":chosen!==current?`示意圖僅供預覽 · 目前：${currentName} → 套用後：${names[chosen]}`:"示意圖僅供預覽 · 有尚未套用的調整。";
     tileEls.forEach((t,i)=>{t.classList.toggle("on",i===chosen);usedChips[i].style.display=i===current?"":"none"});
   }
   const still=matchMedia("(prefers-reduced-motion: reduce)").matches;let t0=performance.now(),last=0;
@@ -78,7 +80,7 @@ PAGES.lighting=body=>{
   async function applyMode(){
     await run("正在讀取並套用燈效……",async()=>{
       if(S.st.live.mode!=="off"){await api("/api/live",{mode:"off"});await load()}
-      const before=unhex(S.st.lights),after=before.slice(),m=chosen;after[10]=m;
+      const before=unhex(S.st.lights),after=before.slice(),m=chosen;after[9]=0;after[10]=m;
       if(Effects.hasBrightness(m))after[56+2*m]=level;
       if(Effects.hasSpeed(m)||Effects.hasColor(m)){const hi=Effects.hasSpeed(m)?speed:before[57+2*m]>>4,lo=Effects.hasColor(m)?colorIndex:before[57+2*m]&15;after[57+2*m]=(hi<<4)|lo}
       const rgbChanged=Effects.hasColor(m)&&custom!==customOf(m);
@@ -105,17 +107,20 @@ PAGES.lighting=body=>{
   sleepIn.oninput=sleepSync;sleepSync();
   body.append(card(sub("無線休眠時間"),muted("藍牙模式下閒置多久後進入休眠。"),row(sleepIn,sleepTxt,sleepApply)));
   // 鍵盤設定：payload[3] 防抖（4＝辦公、1＝遊戲）；payload[22] Tap（0＝關閉，10..127＝時間，預設 20）
-  const office=h("input",{type:"checkbox",checked:!!L&&L[3]===4,disabled:!L,onclick:()=>setSync()});
+  let debounceEdited=false;
+  const office=h("input",{type:"checkbox",checked:!!L&&L[3]===4,disabled:!L,onclick:()=>{debounceEdited=true;setSync()}});
+  office.indeterminate=!!L&&L[3]!==1&&L[3]!==4;
   const tapOn=h("input",{type:"checkbox",checked:!!L&&L[22]!==0,disabled:!L,onclick:()=>setSync()});
   const tapNum=h("input",{type:"number",min:10,max:127,value:L&&L[22]>=10&&L[22]<=127?L[22]:20,style:{width:"90px"},oninput:()=>setSync()});
-  const setApply=btn("套用",()=>patchLights("正在套用鍵盤設定……",a=>{a[3]=office.checked?4:1;a[22]=tapOn.checked?Math.min(127,Math.max(10,Math.round(+tapNum.value||20))):0},"鍵盤設定已套用並完成讀回核對。"));
+  const setApply=btn("套用",()=>patchLights("正在套用鍵盤設定……",a=>{if(debounceEdited)a[3]=office.checked?4:1;a[22]=tapOn.checked?Math.min(127,Math.max(10,Math.round(+tapNum.value||20))):0},"鍵盤設定已套用並完成讀回核對。"));
   function setSync(){
     tapNum.disabled=!tapOn.checked;if(!L){setApply.disabled=true;return}
     const tapChanged=tapOn.checked!==(L[22]!==0)||(tapOn.checked&&L[22]!==0&&Math.round(+tapNum.value)!==L[22]);
-    setApply.disabled=S.busy||!(office.checked!==(L[3]===4)||tapChanged);
+    setApply.disabled=S.busy||!((debounceEdited&&(office.checked?4:1)!==L[3])||tapChanged);
   }
   setSync();
   body.append(card(sub("鍵盤設定"),h("label",{class:"chk"},office,"辦公模式（防抖較長，減少連按誤觸；關閉為遊戲模式，反應最快）"),
+    L&&L[3]!==1&&L[3]!==4?muted("目前防抖為鍵盤原始設定；只調整 Tap 不會改變此項。" ):null,
     row(h("label",{class:"chk"},tapOn,"啟用 Tap"),h("label",null,"Tap 時間（預設 20）"),tapNum),setApply));
   // 側邊指示燈：payload[26]（0＝亮、1＝滅）。與 Fn+Backspace 切換的是同一個欄位，勾選即套用
   const sideOn=h("input",{type:"checkbox",checked:!!L&&L[26]===0,disabled:!L,onclick:()=>{const want=sideOn.checked;patchLights(want?"正在開啟側燈……":"正在關閉側燈……",a=>{a[26]=want?0:1},want?"側邊指示燈已開啟。":"側邊指示燈已關閉。")}});

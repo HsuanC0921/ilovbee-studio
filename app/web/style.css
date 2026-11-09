@@ -23,7 +23,7 @@ h1{margin:0;font-size:26px;font-weight:600;letter-spacing:.005em;text-wrap:balan
 button.btn,.btn{padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font:inherit;cursor:pointer}
 button.btn:hover:not(:disabled){background:var(--hover)}button.btn:disabled{opacity:.45;cursor:default}
 button.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}button.btn.primary:hover:not(:disabled){background:#1450a8}
-input[type=text],input[type=number],select,textarea{padding:7px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+input[type=text],input[type=search],input[type=number],select,textarea{padding:7px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
 input[type=range]{accent-color:var(--blue)}
 label.chk{display:flex;gap:8px;align-items:center;cursor:pointer}
 .chip{display:inline-block;background:var(--hover);border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600}
@@ -69,3 +69,11 @@ html.tauri .card{background:rgba(255,255,255,.9)}
 @keyframes kfx-breath{50%{opacity:.15}}
 @keyframes kfx-rainbow{to{filter:hue-rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.kfx1,.kfx2,.kfx3{animation:none;outline:2px dashed currentColor;outline-offset:-4px}}
+/* 手冊功能沿用工作區的字體、邊界與焦點樣式。 */
+.manual-tools{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:24px 0 12px}
+.manual-tools input{flex:1;min-width:200px}
+.manual-list{max-width:900px}
+.manual-item{padding:20px 0;border-bottom:1px solid var(--line)}
+.manual-item-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.manual-item h2{font-size:18px;line-height:1.6;margin:0}
+.manual-item p{max-width:72ch;line-height:1.8;margin:10px 0 12px}

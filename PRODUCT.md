@@ -1,6 +1,6 @@
 # iLovbee Studio
 
-Platform: native Windows desktop, x64. Stack: C#, .NET 10 NativeAOT single executable (Win32 tray, local HTTP server on 127.0.0.1) with a plain HTML/CSS/JS settings UI shown in an Edge app window.
+Platform: native Windows desktop, x64. Stack: Rust executable (Win32 tray, WASAPI, local HTTP server on 127.0.0.1) with a plain HTML/CSS/JS settings UI shown in an optional Rust/Tauri window or Edge app window. No .NET runtime or C# host.
 
 One Traditional Chinese Windows user needs a professional replacement for the abandoned B87 controller. Hardware is BY Tech B87 USB 258A:0199 release 2010; Bluetooth name B87 5.0. Do not treat same-name WB32 variants as compatible.
 

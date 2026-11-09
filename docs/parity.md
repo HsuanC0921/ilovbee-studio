@@ -1,5 +1,7 @@
 # 與原廠 iLovbee Keyboard 的功能對照
 
+> 下表的「已實測」記錄自 0.7 C# 版本，不能當作 0.8 Rust 改寫版的實機驗證。新版移轉狀態見 [rust-migration.md](rust-migration.md)，隨附手冊的逐項涵蓋範圍見 [manual-functions.md](manual-functions.md)。
+
 更新：2026-10-19。「已實測」＝在實體 B87 上驗證（讀回比對，或使用者按鍵確認）。
 
 | 原廠功能 | 本程式 | 狀態 |

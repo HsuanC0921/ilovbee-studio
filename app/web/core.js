@@ -9,7 +9,8 @@ const ICONS={
   test:'<rect x="4" y="4" width="16" height="16" rx="4.5"/><path d="M8.8 12.4l2.3 2.3 4.2-4.6"/>',
   profiles:'<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>'};
 const icon=id=>{const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("class","ico");s.innerHTML=ICONS[id]||"";return s};
-const NAV=[["remap","按鍵重設"],["macros","巨集"],["lighting","燈效"],["custom","自訂燈光"],["status","裝置狀態"],["test","按鍵測試"],["profiles","設定檔"]];
+ICONS.manual='<path d="M4 4h6a3 3 0 013 3v14a4 4 0 00-4-2H4zM13 7a3 3 0 013-3h4v15h-3a4 4 0 00-4 2"/>';
+const NAV=[["remap","按鍵重設"],["macros","巨集"],["lighting","燈效"],["custom","自訂燈光"],["status","裝置狀態"],["test","按鍵測試"],["profiles","設定檔"],["manual","手冊功能"]];
 
 function h(tag,props,...kids){
   const e=document.createElement(tag);
@@ -80,8 +81,8 @@ function changeCount(){if(!S.base)return 0;let n=0;for(const l of [0,1,2,3])for(
 
 function updateHeader(){
   const dev=document.getElementById("dev"),pw=document.getElementById("pw");if(!dev)return;
-  dev.textContent=S.st?.connected?"B87 · USB 已連線":"B87 · USB 未連線";
-  pw.textContent=S.st?.battery!=null?`電量 ${S.st.battery}% · Windows 最近回報`:"電量尚未取得";
+  dev.textContent=S.st?.demo?"B87 · 離線示範（不會寫入鍵盤）":S.st?.connected?"B87 · USB 已連線":"B87 · USB 未連線";
+  pw.textContent=S.st?.battery!=null?`電量 ${S.st.battery}% · Windows 最近回報${S.st.batteryReportedAt?" "+new Date(S.st.batteryReportedAt).toLocaleString("zh-TW"):"（時間不明）"}`:"電量尚未取得";
 }
 // 在 Tauri 視窗（無系統標題列）中，拖曳區與視窗控制鍵覆蓋在版面最上方；一般瀏覽器不出現
 function titlebar(){
@@ -107,7 +108,7 @@ function go(id){
 }
 async function refresh(){
   if(changeCount()>0){say("請先套用或取消按鍵變更，再重新讀取。");return}
-  await run("正在讀取鍵盤……",async()=>{await load();go(S.page);say(S.st.connected?"鍵盤設定已同步。":"找不到相容 USB 設定介面。請連接 USB 並切至有線模式。")});
+  await run("正在讀取鍵盤……",async()=>{await load();go(S.page);say(S.st.error||(S.st.demo?"離線示範模式。所有修改僅用於此示範。":S.st.connected?"鍵盤設定已同步。":"找不到相容 USB 設定介面。請連接 USB 並切至有線模式。"),!!S.st.error)});
 }
 function title(body,t,lead){body.append(h("h1",null,t),lead?h("p",{class:"lead"},lead):"")}
 

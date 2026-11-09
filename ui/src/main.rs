@@ -9,7 +9,9 @@ fn server_url() -> Option<String> {
     if let Some(i) = args.iter().position(|a| a == "--url") {
         return args.get(i + 1).cloned();
     }
-    let path = PathBuf::from(env::var_os("LOCALAPPDATA")?).join("iLovbeeStudio").join("server.txt");
+    let path = PathBuf::from(env::var_os("LOCALAPPDATA")?)
+        .join("iLovbeeStudio")
+        .join("server.txt");
     let text = fs::read_to_string(path).ok()?;
     let mut lines = text.lines();
     let port = lines.next()?.trim();
@@ -19,9 +21,21 @@ fn server_url() -> Option<String> {
 
 fn main() {
     let Some(url) = server_url() else { return };
+    let Ok(url) = url::Url::parse(&url) else {
+        return;
+    };
+    if url.scheme() != "http"
+        || url.host_str() != Some("127.0.0.1")
+        || url.port().is_none()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.path() != "/"
+    {
+        return;
+    }
     tauri::Builder::default()
         .setup(move |app| {
-            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.parse().expect("url")))
+            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
                 .title("iLovbee Studio")
                 .inner_size(1200.0, 860.0)
                 .min_inner_size(900.0, 620.0)
