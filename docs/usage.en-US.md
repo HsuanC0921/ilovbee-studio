@@ -1,5 +1,7 @@
 # Usage and development
 
+This project was built for personal use and tested on a specific BY Tech B87. It may not work with other keyboards, including different B87 variants.
+
 A Windows settings tool for the BY Tech B87 keyboard. Version 0.8.0 replaces the C# host with native Rust: HID access, verified writes and rollback, persistence, Win32 tray, Bluetooth battery reporting, WASAPI loopback, lighting and the local HTTP API. There is no C#/.NET build or runtime dependency.
 
 [繁體中文](usage.zh-TW.md) · [Manual feature coverage](manual-functions.md) · [Migration and validation](rust-migration.md)
@@ -32,7 +34,7 @@ Use `--headless --data-dir <path>` for local API testing. Headless mode accepts 
 
 ## Features
 
-Four keymap layers with drafts and undo/redo; up to eight macros; twenty local keymap schemes; built-in lighting and RGB palettes; per-key RGB and effects; twelve audio-reactive styles; layout libraries; backups and profile restore; key testing; Windows Bluetooth battery readings; tray controls and per-user autostart.
+Features include four keymap layers with drafts and undo/redo, up to eight macros, and twenty local keymap schemes. Lighting options cover built-in modes and RGB palettes, per-key RGB and effects, twelve audio-reactive styles, and layout libraries. The app also provides backups and profile restore, key testing, Windows Bluetooth battery readings, tray controls, and per-user autostart.
 
 The searchable manual page covers fifteen groups of manual features, including Bluetooth slots, receiver pairing, Win lock, Windows/Mac switching, knob controls, onboard lighting recording and factory reset. Features without a confirmed USB command explicitly remain physical keyboard operations.
 
@@ -42,9 +44,9 @@ Only USB `258A:0199`, release `2010`, usage `FF00:0001`, with a 520-byte Feature
 
 Existing files in `%LOCALAPPDATA%\\iLovbeeStudio` retain their formats. Demo data defaults to a separate `iLovbeeStudio-Demo` directory. Malformed files produce errors and remain intact.
 
-Mappings and lighting are backed up, written, read back and rolled back on failure. FN is protected during apply and restore. Macro buffers and color tables cannot be read back; no complete hardware backup or verified rollback is claimed for them. Profiles contain mappings and lighting settings, not firmware or unknown onboard macro/custom-light contents.
+Mappings and lighting are backed up, written, read back and rolled back on failure. FN is protected during apply and restore. Macro buffers and color tables cannot be read back. No complete hardware backup or verified rollback is claimed for them. Profiles contain mappings and lighting settings, not firmware or unknown onboard macro/custom-light contents.
 
-The Rust rewrite has offline, simulated-device and real-B87 coverage. Real tests include four-layer write/readback/restore, protected settings, per-key RGB, audio-reactive streaming and crash recovery. Physical Fn input and webcam observations identified and fixed a missing lighting-configuration selector when applying built-in modes. Some key-triggered effects still need physical-input verification; see `docs/hardware-validation.md`. Earlier observations in `docs/firmware.md` remain separate from the rewrite's evidence.
+The Rust rewrite has offline, simulated-device and real-B87 coverage. Real tests include four-layer write/readback/restore, protected settings, per-key RGB, audio-reactive streaming and crash recovery. Physical Fn input and webcam observations identified and fixed a missing lighting-configuration selector when applying built-in modes. Some key-triggered effects still need physical-input verification. See `docs/hardware-validation.md`. Earlier observations in `docs/firmware.md` remain separate from the rewrite's evidence.
 
 See the [Traditional Chinese usage guide](usage.zh-TW.md) for module layout, installation, data formats, and operational details.
 
