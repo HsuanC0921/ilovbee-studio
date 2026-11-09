@@ -113,6 +113,19 @@ fn shipped_binary_auth_assets_edit_backup_restore_and_live_recovery() {
         assert_eq!(status, 200, "{path}: {text}");
         serde_json::from_str(&text).unwrap()
     };
+    // The legacy contract includes static assets as well as JSON endpoints,
+    // so exercise the real HTTP entry rather than the internal JSON dispatcher.
+    for route in include_str!("fixtures/csharp-api-routes.txt")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+    {
+        let (method, path) = route.split_once(' ').unwrap();
+        let (status, _, text) = request(port, method, path, "{}", Some(&cookie), None);
+        assert!(
+            status != 404 && !text.contains("找不到此操作"),
+            "Legacy route removed: {route}"
+        );
+    }
     let state = call("GET", "/api/state", Value::Null);
     assert_eq!(state["demo"], true);
     assert_eq!(state["backend"], "rust");
@@ -211,6 +224,30 @@ fn shipped_binary_auth_assets_edit_backup_restore_and_live_recovery() {
         thread::sleep(Duration::from_millis(30));
     }
     assert!(dir.path().join("live-restore.txt").exists());
+    // The C# host also accepted external edits to live.ini while running.
+    let ini = dir.path().join("live.ini");
+    fs::write(
+        &ini,
+        fs::read_to_string(&ini)
+            .unwrap()
+            .replace("mode=custom", "mode=off"),
+    )
+    .unwrap();
+    let start = Instant::now();
+    loop {
+        if call("GET", "/api/live", Value::Null)["mode"] == "off" {
+            break;
+        }
+        assert!(start.elapsed() < Duration::from_secs(3));
+        thread::sleep(Duration::from_millis(30));
+    }
+    assert!(!dir.path().join("live-restore.txt").exists());
+    call("POST", "/api/live", json!({"mode":"custom"}));
+    let start = Instant::now();
+    while !dir.path().join("live-restore.txt").exists() {
+        assert!(start.elapsed() < Duration::from_secs(3));
+        thread::sleep(Duration::from_millis(30));
+    }
     // Graceful shutdown must restore lighting and clear connection/restore markers.
     running
         .0

@@ -51,7 +51,7 @@ async page => {
     const recording=page.locator('.manual-item').filter({has:page.getByRole('heading',{name:'儲存在鍵盤的自訂背光',exact:true})});
     if(!await recording.getByText('軟體備份不含此圖樣',{exact:false}).isVisible())throw Error('Onboard recording warning missing');
     await recording.getByRole('button',{name:'指派：機內背光錄製／儲存（鍵盤內建）',exact:true}).click();
-    await page.locator('.key').filter({hasText:/^Cal$/}).click();
+    await page.locator('.key[title^="Cal →"]').click();
     if(await page.getByRole('searchbox',{name:'搜尋按鍵功能',exact:true}).inputValue()!=='機內背光錄製／儲存（鍵盤內建）')throw Error('Native function was lost when choosing a key');
     await page.locator('.list > div').getByText('機內背光錄製／儲存（鍵盤內建）',{exact:true}).click();
     await page.getByRole('button',{name:'加入變更',exact:true}).click();

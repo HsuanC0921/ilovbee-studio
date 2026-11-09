@@ -31,14 +31,14 @@ PAGES.custom=body=>{
   if(!connected()){body.append(card(sub("尚未讀取鍵盤"),muted("請連接 USB 並切至有線模式，再按「重新讀取」。")));return}
   initCustom();const live=S.st.live;
   const stateText=live.mode==="off"?"未執行":live.mode==="music"?"音樂律動執行中 · "+live.styles[live.style]:"自訂燈光執行中";
-  const gain=h("input",{type:"range",min:5,max:200,step:5,value:cust.gain,style:{width:"260px"},oninput:()=>{cust.gain=+gain.value},onchange:()=>tune({gain:cust.gain})});
+  const gain=h("input",{type:"range","aria-label":"音樂靈敏度",min:5,max:200,step:5,value:cust.gain,style:{width:"260px"},oninput:()=>{cust.gain=+gain.value},onchange:()=>tune({gain:cust.gain})});
   const send=(redraw)=>tune({colormode:cust.cmode,colordir:cust.cdir,colors:cust.colors.map(c=>c.slice(1))},"已更新音樂配色。").then(()=>redraw&&go("custom"));
-  const cmode=h("select",{onchange:()=>{cust.cmode=+cmode.value;send(true)}},[["彩虹混色（依樣式自動變色）",0],["自訂配色",1]].map(([n,v])=>h("option",{value:v},n)));cmode.value=cust.cmode;
-  const cdir=h("select",{onchange:()=>{cust.cdir=+cdir.value;send()}},[["沿高度（柱子下到上）",0],["沿頻率（左低右高）",1],["隨時間流動",2],["依音量強弱",3]].map(([n,v])=>h("option",{value:v},n)));cdir.value=cust.cdir;
+  const cmode=h("select",{"aria-label":"音樂配色",onchange:()=>{cust.cmode=+cmode.value;send(true)}},[["彩虹混色（依樣式自動變色）",0],["自訂配色",1]].map(([n,v])=>h("option",{value:v},n)));cmode.value=cust.cmode;
+  const cdir=h("select",{"aria-label":"漸層方向",onchange:()=>{cust.cdir=+cdir.value;send()}},[["沿高度（柱子下到上）",0],["沿頻率（左低右高）",1],["隨時間流動",2],["依音量強弱",3]].map(([n,v])=>h("option",{value:v},n)));cdir.value=cust.cdir;
   const presets=[["火焰","#ff2000,#ff8000,#ffe000"],["海洋","#0040ff,#00c0ff,#80ffe0"],["霓虹","#ff00c0,#8000ff,#00e0ff"],["日落","#ffd000,#ff4080,#6020c0"],["森林","#00a040,#80e000"],["冰火","#ff3000,#ffffff,#0080ff"]];
   const chips=cust.colors.map((c,i)=>h("input",{type:"color",value:c,title:"顏色 "+(i+1)+"（右鍵移除）",oncontextmenu:e=>{e.preventDefault();if(cust.colors.length>1){cust.colors.splice(i,1);send(true)}},onchange:e=>{cust.colors[i]=e.target.value;send()}}));
   const custom=cust.cmode==1;
-  const style=h("select",{onchange:()=>{cust.style=+style.value;tune({style:cust.style},"已切換音樂模式。")}},live.styles.map((n,i)=>h("option",{value:i},n)));style.value=cust.style;
+  const style=h("select",{"aria-label":"音樂模式",onchange:()=>{cust.style=+style.value;tune({style:cust.style},"已切換音樂模式。")}},live.styles.map((n,i)=>h("option",{value:i},n)));style.value=cust.style;
   body.append(card(sub("目前狀態"),h("div",{style:{fontSize:"20px",color:live.mode==="off"?"var(--muted)":"var(--blue)"}},stateText),live.status&&live.status.startsWith("錯誤")?muted(live.status):"",
     row(btn("套用自訂燈光",()=>setLive("custom")),btn("開始音樂律動",()=>setLive("music")),btn("停止並恢復原本燈效",()=>setLive("off"),{disabled:live.mode==="off"})),
     row(h("label",null,"音樂模式"),style,h("label",null,"音樂靈敏度"),gain),
@@ -50,16 +50,16 @@ PAGES.custom=body=>{
   // 逐鍵上色
   const buttons=new Map();
   const paintKey=k=>{const b=buttons.get(k.Id),o=k.Slot*3,[r,g,bl]=[cust.frame[o],cust.frame[o+1],cust.frame[o+2]];
-    b.style.background=`rgb(${r},${g},${bl})`;b.style.color=(r*.3+g*.6+bl*.1)>140?"#111":"#fff";b.style.borderColor="#5a6270";
+    b.style.background=`rgb(${r},${g},${bl})`;b.style.color=([r,g,bl].map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0)>.179)?"#000":"#fff";b.style.borderColor="#5a6270";
     b.classList.remove("kfx1","kfx2","kfx3");if(cust.fx[k.Slot])b.classList.add("kfx"+cust.fx[k.Slot]);b.style.setProperty("--kfx-rate",[0,2.5,1.4,.9,.6][cust.fxspeed]+"s")};
-  const kb=keyboardView((b,k)=>{b.textContent=k.Name.length>5?k.Name.slice(0,4):k.Name;b.style.fontSize="9px";buttons.set(k.Id,b);
+  const kb=keyboardView((b,k)=>{b.textContent=KEY_LABEL[k.Name]||k.Name;b.style.fontSize="11px";buttons.set(k.Id,b);
     b.onclick=()=>{const rgb=unhex(cust.paint.slice(1));cust.frame.set(rgb,k.Slot*3);cust.fx[k.Slot]=cust.fxsel;paintKey(k);pushFrame()}});
   S.keys.forEach(k=>{if(buttons.has(k.Id))paintKey(k)});
   const each=fn=>{S.keys.forEach(k=>{if(buttons.has(k.Id)){fn(k);paintKey(k)}});pushFrame()};
   const fill=fn=>each(k=>cust.frame.set(fn(k),k.Slot*3));
-  const fxsel=h("select",{onchange:()=>{cust.fxsel=+fxsel.value}},S.st.live.effects.map((n,i)=>h("option",{value:i},n)));fxsel.value=cust.fxsel;
+  const fxsel=h("select",{"aria-label":"逐鍵行為",onchange:()=>{cust.fxsel=+fxsel.value}},S.st.live.effects.map((n,i)=>h("option",{value:i},n)));fxsel.value=cust.fxsel;
   const fxspeed=h("input",{type:"range",min:1,max:4,step:1,value:cust.fxspeed,title:"閃爍／呼吸／彩虹的速度",onchange:()=>{cust.fxspeed=+fxspeed.value;each(()=>{})}});
-  const color=h("input",{type:"color",value:cust.paint,oninput:()=>{cust.paint=color.value}});
+  const color=h("input",{type:"color","aria-label":"畫筆顏色",value:cust.paint,oninput:()=>{cust.paint=color.value}});
   body.append(card(sub("逐鍵顏色"),muted("先選顏色與行為，再點按鍵。每顆鍵可各自恆亮、閃爍、呼吸或彩虹循環。自訂燈光執行中時，變更會立即顯示在鍵盤上。"),
     h("div",{class:"row",style:{alignItems:"flex-start",gap:"24px"}},h("div",{style:{flex:1,minWidth:"320px"}},kb),
       h("div",{style:{display:"flex",flexDirection:"column",gap:"8px",width:"170px"}},h("label",null,"顏色"),color,h("label",null,"行為"),fxsel,h("label",null,"動態速度"),fxspeed,
@@ -70,8 +70,8 @@ PAGES.custom=body=>{
         btn("全部清除",()=>each(k=>{cust.frame.set([0,0,0],k.Slot*3);cust.fx[k.Slot]=0}))))));
 
   // 配置庫
-  const layouts=S.st.layouts,sel=h("select",null,h("option",{value:""},"選擇配置"),layouts.map((l,i)=>h("option",{value:i},l.Name)));
-  const name=h("input",{type:"text",maxlength:20,placeholder:"配置名稱"});
+  const layouts=S.st.layouts,sel=h("select",{"aria-label":"燈光配置"},h("option",{value:""},"選擇配置"),layouts.map((l,i)=>h("option",{value:i},l.Name)));
+  const name=h("input",{type:"text",maxlength:20,"aria-label":"配置名稱",placeholder:"配置名稱"});
   body.append(card(sub(`燈光配置（${layouts.length}／20）`),
     row(sel,btn("載入",()=>{if(sel.value==="")return;const l=layouts[+sel.value];cust.frame=unhex(l.Frame);cust.fx=unhex(l.Fx||"0".repeat(FX_BYTES*2));pushFrame();go("custom")}),
       btn("刪除",()=>run("正在刪除……",async()=>{if(sel.value==="")return;await api("/api/layouts/delete",{name:layouts[+sel.value].Name});await load();go("custom")}))),

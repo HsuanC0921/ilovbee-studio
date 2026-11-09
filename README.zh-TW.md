@@ -4,6 +4,10 @@ BY Tech B87 的 Windows 設定工具。0.8.0 將原本的 C# 常駐程式完整�
 
 [English](README.md) · [手冊功能對照](docs/manual-functions.md) · [移轉與驗證](docs/rust-migration.md)
 
+0.9.0 補回舊 C# 主程式的外部設定同步，重做不透明的深淺色介面。左下可選「跟隨 Windows／淺色／深色」；縮放時仍保留導覽文字。示範模式現在同時隔離 USB 與真實音訊。
+
+[C# 功能對照](docs/csharp-parity.md) · [發佈測試與範圍](docs/release-validation.md)。正式封裝需通過單元／整合、瀏覽器、資安、壓測及鎖定相依弱點檢查。
+
 ## 使用
 
 支援 Windows 10／11 x64，限定 USB `258A:0199`、release `2010`、usage `FF00:0001`、520-byte Feature Report。其他同名 B87 不代表相容。設定功能需要 USB 有線模式，無線配對仍由鍵盤處理。

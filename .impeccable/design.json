@@ -1,98 +1,114 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-18T00:00:00+08:00",
+  "generatedAt": "2026-11-09T10:24:23.809661+00:00",
   "title": "Design System: iLovbee Studio",
   "extensions": {
     "colorMeta": {
-      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#20242B" },
-      "muted": { "role": "neutral", "displayName": "Slate Muted", "canonical": "#55606D" },
-      "primary": { "role": "primary", "displayName": "Workbench Blue", "canonical": "#185ABD" },
-      "surface": { "role": "neutral", "displayName": "Porcelain Surface", "canonical": "#F7F8FA" },
-      "border": { "role": "neutral", "displayName": "Divider Gray", "canonical": "#D5DBE3" },
-      "keyboard-bed": { "role": "neutral", "displayName": "Keyboard Bed", "canonical": "#E3E7ED" },
-      "pending": { "role": "secondary", "displayName": "Pending Blue Wash", "canonical": "#DCEAFF" },
-      "knob": { "role": "neutral", "displayName": "Knob Graphite", "canonical": "#465365" },
-      "white": { "role": "neutral", "displayName": "White", "canonical": "#FFFFFF" }
+      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#192231" },
+      "muted": { "role": "neutral", "displayName": "Slate Muted", "canonical": "#536174" },
+      "blue": { "role": "primary", "displayName": "Workbench Blue", "canonical": "#1754B5" },
+      "primary": { "role": "primary", "displayName": "Action Blue", "canonical": "#215CC5" },
+      "surface": { "role": "neutral", "displayName": "Porcelain Canvas", "canonical": "#F4F6F9" },
+      "side": { "role": "neutral", "displayName": "Sidebar Mist", "canonical": "#E9EEF5" },
+      "card": { "role": "neutral", "displayName": "White Surface", "canonical": "#FFFFFF" },
+      "field": { "role": "neutral", "displayName": "Field White", "canonical": "#FFFFFF" },
+      "line": { "role": "neutral", "displayName": "Structural Line", "canonical": "#CBD4E1" },
+      "hover": { "role": "neutral", "displayName": "Hover Wash", "canonical": "#DDE6F1" },
+      "selected": { "role": "secondary", "displayName": "Selected Wash", "canonical": "#DCE9FF" },
+      "selected-ink": { "role": "neutral", "displayName": "Selected Ink", "canonical": "#124998" },
+      "bed": { "role": "neutral", "displayName": "Keyboard Bed", "canonical": "#DCE3EC" },
+      "danger": { "role": "tertiary", "displayName": "Danger Red", "canonical": "#A51E29" },
+      "dark-ink": { "role": "neutral", "displayName": "Dark Ink", "canonical": "#EDF2F8" },
+      "dark-muted": { "role": "neutral", "displayName": "Dark Muted", "canonical": "#B4C0D1" },
+      "dark-blue": { "role": "primary", "displayName": "Dark Workbench Blue", "canonical": "#8DBAFF" },
+      "dark-surface": { "role": "neutral", "displayName": "Night Canvas", "canonical": "#111823" },
+      "dark-side": { "role": "neutral", "displayName": "Night Sidebar", "canonical": "#17212E" },
+      "dark-card": { "role": "neutral", "displayName": "Night Surface", "canonical": "#1B2635" },
+      "dark-field": { "role": "neutral", "displayName": "Night Field", "canonical": "#131D2A" },
+      "dark-line": { "role": "neutral", "displayName": "Night Line", "canonical": "#45546A" },
+      "dark-hover": { "role": "neutral", "displayName": "Night Hover", "canonical": "#2B3B50" },
+      "dark-selected": { "role": "secondary", "displayName": "Night Selected", "canonical": "#243D60" },
+      "dark-selected-ink": { "role": "neutral", "displayName": "Night Selected Ink", "canonical": "#C9DFFF" },
+      "dark-bed": { "role": "neutral", "displayName": "Night Keyboard Bed", "canonical": "#0D1520" },
+      "dark-danger": { "role": "tertiary", "displayName": "Night Danger", "canonical": "#FFB0B8" }
     },
     "typographyMeta": {
-      "body": { "displayName": "Windows system UI", "purpose": "Default body and interface text." },
-      "page-title": { "displayName": "Page title", "purpose": "Screen headings." },
-      "compact-label": { "displayName": "Compact label", "purpose": "Supporting and control labels." },
-      "key-legend": { "displayName": "Key legend", "purpose": "Physical key captions." },
-      "test-log": { "displayName": "Cascadia Mono", "purpose": "Keyboard test event text." }
+      "body": { "displayName": "Windows UI sans", "purpose": "Default application text with Traditional Chinese fallbacks." },
+      "page-title": { "displayName": "Page title", "purpose": "Primary screen heading." },
+      "compact-label": { "displayName": "Compact label", "purpose": "Navigation context and supporting labels." },
+      "key-legend": { "displayName": "Key legend", "purpose": "Captions inside the physical keyboard map." },
+      "test-log": { "displayName": "Cascadia Mono", "purpose": "Keyboard test event output." }
     },
-    "breakpoints": []
+    "breakpoints": [
+      { "name": "compact-workbench", "value": "1100px" },
+      { "name": "labeled-navigation-grid", "value": "760px" }
+    ]
   },
   "components": [
-    {
-      "name": "Primary Action Button",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Apply the reviewed keyboard changes.",
-      "html": "<button class=\"ds-button-primary\">套用變更</button>",
-      "css": ".ds-button-primary { background: #185ABD; color: #FFFFFF; padding: 9px 16px; font: 600 14px 'Segoe UI', sans-serif; border: 1px solid #185ABD; border-radius: 4px; } .ds-button-primary:hover { background: #124A9F; border-color: #124A9F; } .ds-button-primary:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; } .ds-button-primary:active { background: #0F3E87; }"
-    },
-    {
-      "name": "Search Field",
-      "kind": "input",
-      "refersTo": "",
-      "description": "Search available key actions by name.",
-      "html": "<input class=\"ds-input-search\" type=\"search\" placeholder=\"搜尋功能，例如 F13、截圖、靜音\" aria-label=\"搜尋按鍵功能\">",
-      "css": ".ds-input-search { background: #FFFFFF; color: #20242B; padding: 9px 12px; font: 14px 'Segoe UI', sans-serif; border: 1px solid #D5DBE3; border-radius: 4px; } .ds-input-search:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; border-color: #185ABD; } .ds-input-search::placeholder { color: #55606D; }"
-    },
     {
       "name": "Navigation Item",
       "kind": "nav",
       "refersTo": "navigation",
-      "description": "Choose one of the five keyboard workbench pages.",
-      "html": "<nav class=\"ds-navigation\" aria-label=\"主要導覽\"><button class=\"ds-nav-item ds-nav-item-selected\">按鍵重設</button><button class=\"ds-nav-item\">燈效</button></nav>",
-      "css": ".ds-navigation { background: #F7F8FA; color: #20242B; padding: 8px; font: 14px 'Segoe UI', sans-serif; } .ds-nav-item { display: block; width: 100%; text-align: left; background: transparent; color: #20242B; padding: 10px 12px; border: 0; border-radius: 4px; font: inherit; } .ds-nav-item:hover { background: #E3E7ED; } .ds-nav-item-selected { background: #DCEAFF; color: #185ABD; } .ds-nav-item:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; }"
+      "description": "A labeled destination in the eight-item workbench navigation.",
+      "html": "<button class=\"ds-nav-item\"><svg aria-hidden=\"true\"></svg><span>按鍵重設</span></button>",
+      "css": ".ds-nav-item { display:flex; align-items:center; gap:12px; width:100%; min-height:44px; padding:10px 14px; color:#192231; background:transparent; border:1px solid transparent; border-radius:9px; font:500 14px/1.5 'Segoe UI',sans-serif; text-align:left; } .ds-nav-item:hover { background:#DDE6F1; } .ds-nav-item[aria-current=page] { background:#DCE9FF; border-color:#CBD4E1; color:#124998; font-weight:700; } @media(max-width:760px) { .ds-nav-item { justify-content:center; gap:6px; min-height:38px; padding:7px 4px; font-size:12px; } .ds-nav-item svg { display:none; } }"
     },
     {
-      "name": "Selected Keyboard Key",
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "A clear action control for committing a reviewed operation.",
+      "html": "<button class=\"ds-primary\">套用變更</button>",
+      "css": ".ds-primary { min-height:38px; padding:8px 15px; border:1px solid #215CC5; border-radius:7px; background:#215CC5; color:#fff; font:600 14px/1.5 'Segoe UI',sans-serif; } .ds-primary:hover:not(:disabled) { filter:brightness(.94); } :focus-visible { outline:3px solid #1754B5; outline-offset:3px; }"
+    },
+    {
+      "name": "Keyboard Key",
       "kind": "custom",
       "refersTo": "keyboard-key-selected",
-      "description": "Marks the physical key currently selected for editing.",
-      "html": "<button class=\"ds-key ds-key-selected\" aria-pressed=\"true\">小算盤鍵</button>",
-      "css": ".ds-key { background: #FFFFFF; color: #20242B; padding: 6px 8px; border: 1px solid #D5DBE3; border-radius: 5px; font: 12px 'Segoe UI', sans-serif; } .ds-key:hover { border-color: #185ABD; } .ds-key-selected { background: #185ABD; color: #FFFFFF; border-color: #185ABD; } .ds-key:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; }"
+      "description": "A physical keycap whose fill distinguishes current selection from a staged edit.",
+      "html": "<button class=\"ds-key ds-key-selected\">計算機</button>",
+      "css": ".ds-key { padding:0; border:1px solid #CBD4E1; border-radius:5px; background:#fff; color:#192231; font:11px/1.25 'Segoe UI',sans-serif; white-space:nowrap; overflow:hidden; } .ds-key-selected { background:#215CC5; border-color:#215CC5; color:#fff; } .ds-key-pending { background:#DCE9FF; color:#124998; border:2px solid #1754B5; } :root[data-theme=dark] .ds-key { background:#131D2A; border-color:#45546A; color:#EDF2F8; } :root[data-theme=dark] .ds-key-selected { background:#8DBAFF; border-color:#8DBAFF; color:#111823; } :root[data-theme=dark] .ds-key-pending { background:#243D60; color:#C9DFFF; border-color:#8DBAFF; }"
     },
     {
-      "name": "Pending Keyboard Key",
-      "kind": "custom",
-      "refersTo": "keyboard-key-pending",
-      "description": "Shows a physical key with a staged mapping change.",
-      "html": "<button class=\"ds-key ds-key-pending\">F13</button>",
-      "css": ".ds-key-pending { background: #DCEAFF; color: #20242B; padding: 6px 8px; border: 2px solid #185ABD; border-radius: 5px; font: 12px 'Segoe UI', sans-serif; } .ds-key-pending:hover { background: #C9DDFA; } .ds-key-pending:focus-visible { outline: 2px solid #20242B; outline-offset: 2px; }"
+      "name": "Workbench Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "An opaque bordered container for related device controls.",
+      "html": "<section class=\"ds-card\"><h2>裝置狀態</h2></section>",
+      "css": ".ds-card { display:flex; flex-direction:column; gap:14px; padding:22px; border:1px solid #CBD4E1; border-radius:12px; background:#fff; } :root[data-theme=dark] .ds-card { border-color:#45546A; background:#1B2635; } @media(max-width:760px) { .ds-card { padding:16px; } }"
     },
     {
-      "name": "Assignment Strip",
-      "kind": "custom",
-      "refersTo": "assignment-strip",
-      "description": "Pairs the current mapping with the proposed action and editing controls.",
-      "html": "<section class=\"ds-assignment\"><div><span>目前指派</span><strong>計算機</strong></div><div><span>搜尋按鍵功能</span><input aria-label=\"搜尋按鍵功能\"></div></section>",
-      "css": ".ds-assignment { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 24px; background: #FFFFFF; color: #20242B; padding: 16px; border: 1px solid #D5DBE3; border-radius: 8px; font: 14px 'Segoe UI', sans-serif; } .ds-assignment span { display: block; color: #55606D; font-size: 12px; margin-bottom: 8px; } .ds-assignment strong { font-size: 16px; font-weight: 400; } .ds-assignment input { width: 100%; padding: 9px 12px; border: 1px solid #D5DBE3; border-radius: 4px; font: inherit; } .ds-assignment input:focus-visible { outline: 2px solid #185ABD; outline-offset: 1px; }"
+      "name": "Theme Selector",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A labeled system, light, or dark appearance choice stored locally.",
+      "html": "<label for=\"theme-choice\">介面主題</label><select id=\"theme-choice\"><option>跟隨 Windows</option><option>淺色</option><option>深色</option></select>",
+      "css": "select { min-height:38px; min-width:0; padding:7px 10px; border:1px solid #CBD4E1; border-radius:7px; background:#fff; color:#192231; font:13px 'Segoe UI',sans-serif; } :root[data-theme=dark] select { border-color:#45546A; background:#131D2A; color:#EDF2F8; } :focus-visible { outline:3px solid #1754B5; outline-offset:3px; }"
     }
   ],
   "narrative": {
     "northStar": "The Precise Keyboard Workbench",
-    "overview": "This Windows-native interface treats the physical keyboard as the work surface. A quiet porcelain canvas and graphite text keep attention on the key map; restrained blue marks selection and the next committed action. Traditional Chinese labels are direct and compact, with status and controls carrying the workflow instead of promotional copy.\n\nFluent controls retain their familiar keyboard focus and interaction states. The integrated title bar keeps native caption controls, while the large keyboard, current-versus-proposed assignment strip, and staged changes make editing legible at a glance.",
+    "overview": "A quiet neutral Windows workbench for configuring a physical B87 keyboard. Graphite text and opaque tonal surfaces keep the device map and controls legible; blue distinguishes selection and action states. Traditional Chinese labels are concise and operational. The native shell keeps its caption controls in a separate 36px strip. The work area follows Windows theme by default, with a persisted local system, light, or dark choice.",
     "keyCharacteristics": [
-      "Professional Traditional Chinese desktop UI",
-      "Native WinUI 3 controls and Fluent focus affordances",
-      "Blue means selected; pale blue means pending",
-      "Large physical keyboard map with an explicit knob test affordance"
+      "Opaque neutral work surfaces with blue state color",
+      "Eight always-labeled navigation destinations",
+      "Windows UI sans typography with Traditional Chinese fallbacks",
+      "Physical keyboard map and adjacent editing controls remain central"
     ],
     "rules": [
-      { "name": "The State Color Rule", "body": "Blue identifies the selected key; pale blue identifies a pending mapping. Keep those meanings distinct.", "section": "colors" }
+      { "name": "The Opaque Surface Rule", "body": "Every app surface declares a solid theme color so native window composition cannot wash out interface text.", "section": "colors" },
+      { "name": "The State Color Rule", "body": "Blue marks active selection, focus, and primary action; the pale selected wash distinguishes staged mapping changes.", "section": "colors" }
     ],
     "dos": [
-      "Do retain native WinUI controls and their Fluent focus behavior.",
-      "Do distinguish the selected key from staged edits using the established blue and pale blue states.",
-      "Do keep current assignment and proposed action visibly adjacent in the assignment strip."
+      "Do keep all app regions opaque and use the matching light or dark token set.",
+      "Do keep all eight navigation labels visible, including in the compact grid.",
+      "Do distinguish selected keys from staged edits with the established state colors.",
+      "Do preserve the separate native caption strip and visible keyboard focus."
     ],
     "donts": [
-      "Don't assign a key meaning to the knob from its physical position; it opens key testing.",
-      "Don't replace the neutral workbench with decorative dashboard cards or marketing copy."
+      "Don't imply keyboard mapping from the knob's location; it opens key testing.",
+      "Don't introduce translucent app surfaces that compromise text legibility.",
+      "Don't replace the neutral workbench with decorative marketing panels."
     ]
   }
 }

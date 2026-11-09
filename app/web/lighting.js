@@ -27,6 +27,7 @@ PAGES.lighting=body=>{
   const mkRange=()=>h("input",{type:"range",min:1,max:4,step:1,style:{width:"220px"}});
   const levelIn=mkRange(),speedIn=mkRange(),levelTxt=h("span",{class:"muted"}),speedTxt=h("span",{class:"muted"});
   levelIn.oninput=()=>{level=+levelIn.value;sync()};speedIn.oninput=()=>{speed=+speedIn.value;sync()};
+  levelIn.setAttribute("aria-label","背光亮度");speedIn.setAttribute("aria-label","背光速度");
   const levelRow=row(h("label",null,"亮度"),levelIn,levelTxt),speedRow=row(h("label",null,"速度"),speedIn,speedTxt);
   const swatches=Effects.Palette.map((p,i)=>h("button",{class:"sw",title:Effects.PaletteNames[i],style:{background:rgbStr(...p)},onclick:()=>{fixedColor=colorIndex=i;sync()}}));
   const rgbIn=h("input",{type:"color",title:"自訂 RGB（第一格色票）",oninput:()=>{custom=rgbIn.value.slice(1);fixedColor=colorIndex=0;sync()}});
@@ -101,7 +102,7 @@ PAGES.lighting=body=>{
   // 無線休眠：payload[24]，單位 30 秒
   const sleepBytes=[0x0A,0x14,0x28,0x3C,0],sleepLabels=["5 分鐘","10 分鐘","20 分鐘","30 分鐘","永不休眠"];
   const storedSleep=L?sleepBytes.indexOf(L[24]):-1;
-  const sleepIn=h("input",{type:"range",min:0,max:4,step:1,value:storedSleep>=0?storedSleep:1,disabled:storedSleep<0,style:{width:"260px"}});
+  const sleepIn=h("input",{type:"range","aria-label":"無線休眠時間",min:0,max:4,step:1,value:storedSleep>=0?storedSleep:1,disabled:storedSleep<0,style:{width:"260px"}});
   const sleepTxt=h("span",{style:{width:"90px"}}),sleepApply=btn("套用",()=>patchLights("正在套用休眠時間……",a=>{a[24]=sleepBytes[+sleepIn.value]},"休眠時間已套用並完成讀回核對。"));
   const sleepSync=()=>{sleepTxt.textContent=storedSleep>=0?sleepLabels[+sleepIn.value]:"尚未讀取";sleepApply.disabled=S.busy||storedSleep<0||+sleepIn.value===storedSleep};
   sleepIn.oninput=sleepSync;sleepSync();
@@ -111,7 +112,7 @@ PAGES.lighting=body=>{
   const office=h("input",{type:"checkbox",checked:!!L&&L[3]===4,disabled:!L,onclick:()=>{debounceEdited=true;setSync()}});
   office.indeterminate=!!L&&L[3]!==1&&L[3]!==4;
   const tapOn=h("input",{type:"checkbox",checked:!!L&&L[22]!==0,disabled:!L,onclick:()=>setSync()});
-  const tapNum=h("input",{type:"number",min:10,max:127,value:L&&L[22]>=10&&L[22]<=127?L[22]:20,style:{width:"90px"},oninput:()=>setSync()});
+  const tapNum=h("input",{type:"number","aria-label":"Tap 時間",min:10,max:127,value:L&&L[22]>=10&&L[22]<=127?L[22]:20,style:{width:"90px"},oninput:()=>setSync()});
   const setApply=btn("套用",()=>patchLights("正在套用鍵盤設定……",a=>{if(debounceEdited)a[3]=office.checked?4:1;a[22]=tapOn.checked?Math.min(127,Math.max(10,Math.round(+tapNum.value||20))):0},"鍵盤設定已套用並完成讀回核對。"));
   function setSync(){
     tapNum.disabled=!tapOn.checked;if(!L){setApply.disabled=true;return}

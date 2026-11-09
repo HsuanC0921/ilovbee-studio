@@ -52,7 +52,7 @@ PAGES.profiles=body=>{
   const schemes=S.st?.schemes||[];
   if(schemeSel>=schemes.length)schemeSel=-1;
   const pick=()=>{if(schemeSel<0){say("請先選擇一個方案。",true);return null}return schemeSel};
-  const nameIn=h("input",{type:"text",maxlength:20,placeholder:"新方案名稱"});
+  const nameIn=h("input",{type:"text",maxlength:20,"aria-label":"方案名稱",placeholder:"新方案名稱"});
   const list=h("div",{class:"list"},schemes.map((n,i)=>h("div",{class:i===schemeSel?"on":"",onclick:()=>{schemeSel=i;go("profiles")}},n)));
   body.append(card(sub(`按鍵方案（${schemes.length}／20）`),
     muted("方案存在本機，包含預設層、FN1、FN2 與 Tap 四層。套用方案會整份寫入鍵盤，寫入前自動備份並讀回核對。"),

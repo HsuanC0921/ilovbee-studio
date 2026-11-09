@@ -16,6 +16,64 @@ fn store() -> (tempfile::TempDir, Store) {
     let s = Store::new(dir.path().to_path_buf()).unwrap();
     (dir, s)
 }
+#[test]
+fn external_live_ini_changes_reload_and_invalid_edits_preserve_last_valid_config() {
+    let (_dir, s) = store();
+    let mut app = App::new(s.clone(), true).unwrap();
+    assert!(!app.reload_config().unwrap());
+    let external = Config {
+        mode: "custom".into(),
+        style: 5,
+        ..Config::default()
+    };
+    external.save(&s).unwrap();
+    assert!(app.reload_config().unwrap());
+    assert_eq!(app.config.mode, "custom");
+    assert_eq!(app.config.style, 5);
+    assert!(!app.reload_config().unwrap());
+    s.write_text("live.ini", "mode=music\ngain=NaN\n").unwrap();
+    assert!(app.reload_config().is_err());
+    assert_eq!(app.config.mode, "custom");
+    assert_eq!(
+        s.read_text("live.ini", 8192).unwrap().unwrap(),
+        "mode=music\ngain=NaN\n"
+    );
+    let stopped = Config {
+        style: 7,
+        ..Config::default()
+    };
+    stopped.save(&s).unwrap();
+    assert!(app.reload_config().unwrap());
+    assert_eq!(app.config.mode, "off");
+    assert_eq!(app.config.style, 7);
+}
+#[test]
+fn demo_music_runs_without_physical_audio_and_restores_lighting() {
+    use std::{
+        sync::atomic::{AtomicBool, Ordering},
+        time::Duration,
+    };
+    let (_dir, s) = store();
+    let mut app = App::new(s, true).unwrap();
+    let original = app.service.capture().unwrap();
+    app.set_config(Config {
+        mode: "music".into(),
+        ..Config::default()
+    })
+    .unwrap();
+    let app = Arc::new(Mutex::new(app));
+    let stop = Arc::new(AtomicBool::new(false));
+    let worker = live::spawn(app.clone(), stop.clone());
+    std::thread::sleep(Duration::from_millis(150));
+    let status = app.lock().unwrap().status.clone();
+    stop.store(true, Ordering::Relaxed);
+    worker.join().unwrap();
+    assert!(status.starts_with("音樂律動"), "{status}");
+    assert_eq!(
+        app.lock().unwrap().service.capture().unwrap().lighting,
+        original.lighting
+    );
+}
 fn mac(name: &str, events: &[(u8, bool, i32)]) -> Macro {
     Macro {
         name: name.into(),

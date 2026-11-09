@@ -144,12 +144,17 @@ impl Desktop {
         let demo = self.app.lock().unwrap().service.demo;
         let reading = if demo { None } else { windows::battery()? };
         let percent = reading.as_ref().map(|b| b.percent);
-        let size = 32;
+        let size = windows_sys::Win32::UI::HiDpi::GetSystemMetricsForDpi(
+            SM_CXSMICON,
+            windows_sys::Win32::UI::HiDpi::GetDpiForSystem(),
+        )
+        .max(16) as usize;
         let mut rgba = vec![0u8; size * size * 4];
-        let mut mask = vec![255u8; size * size / 8];
+        let mask_stride = size.div_ceil(16) * 2;
+        let mut mask = vec![255u8; size * mask_stride];
         for py in 0..size {
             for px in 0..size {
-                let (x, y) = (px / 2, py / 2);
+                let (x, y) = (px * 16 / size, py * 16 / size);
                 let border = (x == 1 || x == 13 || y == 3 || y == 12)
                     && (1..=13).contains(&x)
                     && (3..=12).contains(&y);
@@ -165,11 +170,19 @@ impl Desktop {
                         [189, 90, 24, 255]
                     };
                     rgba[at..at + 4].copy_from_slice(&col);
-                    mask[py * 4 + px / 8] &= !(0x80 >> (px % 8));
+                    mask[py * mask_stride + px / 8] &= !(0x80 >> (px % 8));
                 }
             }
         }
-        let icon = CreateIcon(null_mut(), 32, 32, 1, 32, mask.as_ptr(), rgba.as_ptr());
+        let icon = CreateIcon(
+            null_mut(),
+            size as i32,
+            size as i32,
+            1,
+            32,
+            mask.as_ptr(),
+            rgba.as_ptr(),
+        );
         ensure!(!icon.is_null(), "無法建立系統匣圖示。");
         let old = self.tray.hIcon;
         self.tray.hIcon = icon;
@@ -197,7 +210,7 @@ impl Desktop {
                 .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
                 .is_some_and(|t| {
                     let age = chrono::Utc::now().signed_duration_since(t);
-                    age >= chrono::Duration::zero() && age < chrono::Duration::hours(24)
+                    age >= chrono::Duration::zero() && age < chrono::Duration::minutes(10)
                 });
             if b.percent <= 20
                 && recent

@@ -23,6 +23,7 @@ pub struct App {
     pub status: String,
     pub active: bool,
     pub revision: u64,
+    config_stamp: Option<std::time::SystemTime>,
 }
 impl App {
     pub fn new(store: Store, demo: bool) -> Result<Self> {
@@ -40,6 +41,7 @@ impl App {
             validate_layout(l)?;
         }
         let config = Config::load(&store)?;
+        let config_stamp = Config::stamp(&store)?;
         Ok(Self {
             service: Service::new(store, demo),
             macros,
@@ -49,6 +51,7 @@ impl App {
             status: "未執行".into(),
             active: false,
             revision: 0,
+            config_stamp,
         })
     }
     pub fn set_config(&mut self, c: Config) -> Result<()> {
@@ -59,9 +62,26 @@ impl App {
             self.status = "未執行".into();
         }
         c.save(&self.service.store)?;
+        self.config_stamp = Config::stamp(&self.service.store)?;
         self.config = c;
         self.revision += 1;
         Ok(())
+    }
+    /// Preserve the C# host's external live.ini synchronization without USB polling.
+    pub fn reload_config(&mut self) -> Result<bool> {
+        let stamp = Config::stamp(&self.service.store)?;
+        if stamp == self.config_stamp {
+            return Ok(false);
+        }
+        let c = Config::load(&self.service.store)?;
+        if c.mode == "off" {
+            live::recover(&mut self.service)?;
+            self.active = false;
+        }
+        self.config = c;
+        self.config_stamp = stamp;
+        self.revision += 1;
+        Ok(true)
     }
     fn stop_live(&mut self) -> Result<()> {
         if self.config.mode != "off" || self.active {
@@ -88,6 +108,7 @@ impl App {
             None
         };
         let mut v = json!({"connected":connected,"demo":self.service.demo,"backend":"rust","error":error,"actions":actions::json_actions(&self.macros),"macros":self.macros,"schemes":self.schemes.iter().map(|s|&s.name).collect::<Vec<_>>(),"layouts":self.layouts,"live":self.config.json(&self.status)});
+        v["version"] = json!(env!("CARGO_PKG_VERSION"));
         if let Some(p) = profile {
             let mut names = serde_json::Map::new();
             for (&l, m) in &p.keymaps {
@@ -446,6 +467,7 @@ fn asset(path: &str) -> Option<(&'static str, &'static [u8])> {
         "/" => web!("index.html", "text/html; charset=utf-8"),
         "/style.css" => web!("style.css", "text/css; charset=utf-8"),
         "/core.js" => web!("core.js", "text/javascript; charset=utf-8"),
+        "/theme.js" => web!("theme.js", "text/javascript; charset=utf-8"),
         "/remap.js" => web!("remap.js", "text/javascript; charset=utf-8"),
         "/macros.js" => web!("macros.js", "text/javascript; charset=utf-8"),
         "/lighting.js" => web!("lighting.js", "text/javascript; charset=utf-8"),
@@ -470,6 +492,8 @@ fn respond(r: Request, status: u16, mime: &str, data: Vec<u8>, cookie: Option<St
         ("X-Content-Type-Options", "nosniff"),
         ("Referrer-Policy", "no-referrer"),
         ("X-Frame-Options", "DENY"),
+        ("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"),
+        ("Permissions-Policy", "camera=(), microphone=(), geolocation=()"),
     ] {
         res.add_header(Header::from_bytes(k, v).unwrap());
     }
@@ -540,5 +564,26 @@ pub fn serve_one(mut r: Request, app: &Arc<Mutex<App>>, session: &Session) {
     respond(r, status, "application/json; charset=utf-8", data, None);
 }
 pub fn listen() -> Result<Server> {
-    Server::http("127.0.0.1:0").map_err(|e| anyhow::anyhow!("無法啟動本機服務：{e}"))
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    #[cfg(windows)]
+    {
+        // WinSock accept inherits these timeouts. A stalled body must not hold
+        // the sole configuration request thread or prevent a clean shutdown.
+        use std::os::windows::io::AsRawSocket;
+        use windows_sys::Win32::Networking::WinSock::*;
+        let timeout: u32 = 2000;
+        for option in [SO_RCVTIMEO, SO_SNDTIMEO] {
+            let result = unsafe {
+                setsockopt(
+                    listener.as_raw_socket() as SOCKET,
+                    SOL_SOCKET,
+                    option,
+                    (&timeout as *const u32).cast(),
+                    4,
+                )
+            };
+            ensure!(result == 0, "無法設定本機 HTTP 逾時。");
+        }
+    }
+    Server::from_listener(listener, None).map_err(|e| anyhow::anyhow!("無法啟動本機服務：{e}"))
 }

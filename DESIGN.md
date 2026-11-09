@@ -1,69 +1,108 @@
 ---
 name: iLovbee Studio
-description: Precise, native Windows workbench for configuring the B87 keyboard.
+description: A precise Windows workbench for configuring the B87 keyboard.
 colors:
-  ink: "#20242B"
-  muted: "#55606D"
-  primary: "#185ABD"
-  surface: "#F7F8FA"
-  border: "#D5DBE3"
-  keyboard-bed: "#E3E7ED"
-  pending: "#DCEAFF"
-  knob: "#465365"
+  ink: "#192231"
+  muted: "#536174"
+  blue: "#1754B5"
+  primary: "#215CC5"
+  surface: "#F4F6F9"
+  side: "#E9EEF5"
+  card: "#FFFFFF"
+  field: "#FFFFFF"
   white: "#FFFFFF"
+  line: "#CBD4E1"
+  hover: "#DDE6F1"
+  selected: "#DCE9FF"
+  selected-ink: "#124998"
+  bed: "#DCE3EC"
+  danger: "#A51E29"
+  dark-ink: "#EDF2F8"
+  dark-muted: "#B4C0D1"
+  dark-blue: "#8DBAFF"
+  dark-surface: "#111823"
+  dark-side: "#17212E"
+  dark-card: "#1B2635"
+  dark-field: "#131D2A"
+  dark-line: "#45546A"
+  dark-hover: "#2B3B50"
+  dark-selected: "#243D60"
+  dark-selected-ink: "#C9DFFF"
+  dark-bed: "#0D1520"
+  dark-danger: "#FFB0B8"
 typography:
   body:
-    fontFamily: "Windows system UI"
-    fontSize: "14px"
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft JhengHei UI, Microsoft JhengHei, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
     lineHeight: 1.6
   page-title:
-    fontFamily: "Windows system UI"
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft JhengHei UI, Microsoft JhengHei, sans-serif"
     fontSize: "28px"
-    fontWeight: 600
+    fontWeight: 650
+    lineHeight: 1.35
   compact-label:
-    fontFamily: "Windows system UI"
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft JhengHei UI, Microsoft JhengHei, sans-serif"
     fontSize: "12px"
   key-legend:
-    fontFamily: "Windows system UI"
-    fontSize: "12px"
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft JhengHei UI, Microsoft JhengHei, sans-serif"
+    fontSize: "11px"
   test-log:
-    fontFamily: "Cascadia Mono"
+    fontFamily: "Cascadia Mono, Consolas, monospace"
     fontSize: "14px"
 rounded:
   key: "5px"
-  card: "8px"
+  chip: "5px"
+  field: "7px"
+  button: "7px"
+  navigation: "9px"
+  tile: "10px"
+  card: "12px"
   keyboard: "12px"
-  knob: "18px"
+  knob: "50%"
 spacing:
   xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "16px"
   xl: "20px"
+  section: "24px"
   page: "32px"
 components:
+  navigation:
+    backgroundColor: "{colors.side}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.navigation}"
+    padding: "10px 14px"
+    height: "44px"
+  navigation-selected:
+    backgroundColor: "{colors.selected}"
+    textColor: "{colors.selected-ink}"
+    rounded: "{rounded.navigation}"
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.white}"
-    padding: "9px 16px"
-  button-standard:
-    textColor: "{colors.ink}"
-    padding: "9px 16px"
+    rounded: "{rounded.button}"
+    padding: "8px 15px"
+    height: "38px"
   keyboard-key-selected:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.white}"
     rounded: "{rounded.key}"
   keyboard-key-pending:
-    backgroundColor: "{colors.pending}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.selected}"
+    textColor: "{colors.selected-ink}"
     rounded: "{rounded.key}"
-  assignment-strip:
-    backgroundColor: "{colors.white}"
+  card:
+    backgroundColor: "{colors.card}"
     rounded: "{rounded.card}"
-    padding: "16px"
-  navigation:
-    backgroundColor: "{colors.surface}"
+    padding: "22px"
+  field:
+    backgroundColor: "{colors.field}"
     textColor: "{colors.ink}"
+    rounded: "{rounded.field}"
+    padding: "7px 10px"
+    height: "38px"
 ---
 
 # Design System: iLovbee Studio
@@ -72,88 +111,112 @@ components:
 
 **Creative North Star: “The Precise Keyboard Workbench”**
 
-This Windows-native interface treats the physical keyboard as the work surface. A quiet porcelain canvas and graphite text keep attention on the key map; restrained blue marks selection and the next committed action. Traditional Chinese labels are direct and compact, with status and controls carrying the workflow instead of promotional copy.
+This is a quiet, neutral Windows workbench for configuring a physical B87 keyboard. Graphite text and opaque tonal surfaces keep the device map and controls legible; blue distinguishes selection and action states. Traditional Chinese labels are concise and operational.
 
-Fluent controls retain their familiar keyboard focus and interaction states. The integrated title bar keeps native caption controls, while the large keyboard, current-versus-proposed assignment strip, and staged changes make editing legible at a glance.
+The native shell keeps its own caption controls in a separate 36px strip. The work area follows the selected Windows theme by default, with a persisted local choice of system, light, or dark. The same component roles and spacing apply in both palettes.
 
 **Key Characteristics:**
-- Professional Traditional Chinese desktop UI
-- Standard HTML controls with visible focus outlines
-- Blue means selected; pale blue means pending
-- Large physical keyboard map with an explicit knob test affordance
+- Opaque, neutral work surfaces with blue state color
+- Eight always-labeled navigation destinations
+- Windows UI sans typography with Traditional Chinese fallbacks
+- Physical keyboard map and adjacent editing controls remain central
 
 ## Colors
 
-Porcelain neutrals frame a single clear blue accent; color communicates state rather than decoration.
+The palette uses cool blue-gray neutrals in light mode and deep blue-charcoal neutrals in dark mode; the blue accent remains reserved for selection, focus, and primary actions.
 
 ### Primary
-- **Workbench Blue** (`{colors.primary}`): Selects the active physical key and accents the apply action.
+- **Workbench Blue** (`{colors.blue}`): Key hover and active editing accents in the light palette; use the brighter dark counterpart for the same state roles.
+- **Action Blue** (`{colors.primary}`): Primary action controls and checks.
 
 ### Neutral
-- **Graphite Ink** (`{colors.ink}`): Main labels and key legends.
-- **Slate Muted** (`{colors.muted}`): Supporting labels and secondary status.
-- **Porcelain Surface** (`{colors.surface}`): Main application and title-bar surface.
-- **Divider Gray** (`{colors.border}`): Fine structural borders.
-- **Keyboard Bed** (`{colors.keyboard-bed}`): Recessed field behind the key map.
-- **Pending Blue Wash** (`{colors.pending}`): Background of a key with a staged edit.
-- **Knob Graphite** (`{colors.knob}`): Physical rotary-control marker.
-- **White** (`{colors.white}`): Key faces and assignment surface.
+- **Graphite Ink** (`{colors.ink}`): Main text in light mode.
+- **Slate Muted** (`{colors.muted}`): Supporting text and subdued interface labels.
+- **Porcelain Canvas** (`{colors.surface}`): Main page background.
+- **Sidebar Mist** (`{colors.side}`): Navigation and native caption strip background.
+- **White Surface** (`{colors.card}`): Header, cards, and feedback surface.
+- **Field White** (`{colors.field}`): Inputs and key faces.
+- **Structural Line** (`{colors.line}`): Borders and dividers.
+- **Hover Wash** (`{colors.hover}`): Hover surfaces.
+- **Selected Wash** (`{colors.selected}`) with **Selected Ink** (`{colors.selected-ink}`): Selected navigation and staged mapping state.
+- **Keyboard Bed** (`{colors.bed}`): Recessed field under the keyboard map.
+- Dark mode uses the matching `dark-*` tokens for ink, surfaces, borders, selected state, keyboard bed, and danger status.
 
 ### Named Rules
-**The State Color Rule.** Blue identifies the selected key; pale blue identifies a pending mapping. Keep those meanings distinct.
+**The Opaque Surface Rule.** Every app surface declares a solid theme color so native window composition cannot wash out interface text.
+
+**The State Color Rule.** Blue marks active selection, focus, and primary action; the pale selected wash distinguishes staged mapping changes.
 
 ## Typography
 
-**Display Font:** Windows system UI (Segoe UI)
-**Body Font:** Windows system UI (Segoe UI)
-**Label/Mono Font:** Windows system UI for labels; Cascadia Mono for the key-test log.
+**Display Font:** Segoe UI Variable Text (fallback: Segoe UI)
+**Body Font:** Segoe UI Variable Text, with Segoe UI and Microsoft JhengHei UI/Microsoft JhengHei fallbacks
+**Label/Mono Font:** Windows UI sans for labels; Cascadia Mono (fallback: Consolas) for test logs.
 
-**Character:** Familiar Windows typography keeps the workbench native and readable. Compact labels support a dense device editor, while page titles establish a clear hierarchy.
+**Character:** Familiar Windows sans forms keep this dense utility readable. Traditional Chinese fallbacks are explicit; tabular numerals support device readings.
 
 ### Hierarchy
-- **Page title** (semibold, 28px): Screen heading.
-- **Body** (system default, 14px, 1.6 line height): Supporting text and device status.
-- **Key action** (system default, 16px): Current assignment in the selected-key strip.
-- **Label** (system default, 12px): Field labels, helper text, and key legends.
+- **Page title** (semibold, 28px, 1.35): Main screen heading.
+- **Section title** (semibold, 16–22px): Cards and secondary sections.
+- **Body** (regular, 15px, 1.6): Primary interface text.
+- **Compact label** (12px): Navigation context, supporting labels, and device details.
+- **Key legend** (11px): Captions within the physical key map.
 - **Test log** (Cascadia Mono, 14px): Keyboard test events.
 
 ## Layout
 
-The integrated 48px title bar sits above a fixed 210px sidebar built from standard buttons. The content area keeps device status at the top, scrollable page content in the middle, and operation feedback at the bottom. Use a 32px page inset and the observed 4/8/12/16/20px spacing steps. On the remapping page, keep the complete keyboard map prominent and the full-width assignment surface immediately below it; scale the map down as needed rather than cropping it.
+The desktop shell uses a 232px sidebar, a flexible work area, and a separate 36px native caption strip. At widths up to 1100px the sidebar becomes 200px and split content stacks; at 760px and below navigation becomes a four-column, two-row labeled grid above the content. Keep all eight destinations visible and labels readable. The main area has a status header, independently scrolling page body, and persistent operation feedback footer.
+
+Use the 4/8/12/16/20/24/32px spacing rhythm. The keyboard map uses a 800×300 design coordinate space and scales down to fit its available width. Preserve opaque surfaces and avoid horizontal overflow at narrow widths.
 
 ## Elevation & Depth
 
-Depth comes from tonal surfaces and borders: the keyboard sits on a cool gray bed, key faces and the assignment strip use white, and a thin divider separates device status. No custom shadow tokens are defined in the implementation. Native controls provide their own focus and interaction treatments.
+The interface is flat and tonal rather than shadow-led. Surface contrast, thin borders, and the recessed keyboard bed establish grouping and depth. No custom shadow vocabulary is used.
 
 ## Shapes
 
-Use crisp, gently rounded geometry: 5px key corners, 8px assignment surface corners, a 12px keyboard bed, and a circular 18px knob. Thin gray borders separate unselected keys; selected or pending keys use the blue accent border, with a stronger 2px border for pending changes.
+Controls use compact rounded rectangles, with slightly more generous corners for cards and the keyboard bed. Keycaps remain small and distinct; the rotary marker is circular. Borders carry structure without ornamental outlines. Preserve the visible 3px focus outline and offset for keyboard interaction.
 
 ## Components
 
 ### Buttons
-- **Character:** Familiar, tactile controls with concise Traditional Chinese action labels.
-- **Primary:** The apply action uses the native accent button style; ordinary buttons use 16px horizontal and 9px vertical padding.
-- **Hover / Focus:** Preserve native Fluent hover, pressed, and keyboard-focus states.
+- **Character:** Compact Windows workbench controls with direct Traditional Chinese labels.
+- **Primary:** Blue surface with contrasting text; 38px minimum height and 8px/15px padding.
+- **Standard:** Opaque field surface, structural border, and 7px corners.
+- **Hover / Focus:** Hover uses the tonal hover surface; keyboard focus uses a 3px theme-colored outline with 3px offset.
 
 ### Inputs / Fields
-- **Style:** Use native text, select, and list controls for search, layer choice, and assignment.
-- **Focus:** Keep Fluent keyboard focus visible and preserve native interaction behavior.
+- **Style:** Opaque field surface with structural border, 7px corners, and 38px minimum height.
+- **Focus:** Shared visible 3px theme-colored outline.
+- **Disabled:** Reduced opacity with default cursor for disabled action buttons.
 
 ### Navigation
-- **Style:** Seven labeled buttons with familiar iconography in a fixed 210px sidebar. The active destination uses the primary blue surface; other destinations keep transparent backgrounds and muted icons.
+- **Style:** Eight vertically stacked, icon-plus-text destinations in the desktop sidebar. Labels stay visible at all widths; compact layout hides icons while retaining labels.
+- **State:** Active destination uses selected wash and selected ink; hover uses the hover surface.
+
+### Cards / Containers
+- **Corner Style:** 12px cards; 10px tiles.
+- **Background:** Opaque card token with a thin structural border.
+- **Shadow Strategy:** No custom shadows; tonal layering defines the workbench.
+- **Internal Padding:** 22px desktop cards, reduced to 16px on compact screens.
 
 ### Keyboard Map
-- **Style:** A complete, clickable physical layout on a rounded gray bed. White key faces carry compact legends; the selected key is blue, while a changed key is pale blue with a blue outline.
-- **Behavior:** Selecting a key updates the adjacent current/proposed assignment strip. The rotary knob opens key testing and does not imply an undocumented mapping.
+- **Style:** Complete clickable physical layout on a 12px rounded keyboard bed; keycaps use compact legends and 5px corners.
+- **State:** Selected key uses primary blue; a staged edit uses selected wash, selected ink, and a stronger blue outline.
+- **Behavior:** The selected key's current and proposed assignments remain available in the editing flow. The physical knob opens key testing; its physical location does not establish a mapping.
+
+### Theme Control
+- **Behavior:** A labeled selector offers system, light, and dark modes. The choice is stored locally; system mode follows the Windows color preference.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** retain standard controls and their focus behavior.
-- **Do** distinguish the selected key from staged edits using the established blue and pale blue states.
-- **Do** keep current assignment and proposed action visibly adjacent in the assignment strip.
+- **Do** keep all app regions opaque and use the matching light or dark token set.
+- **Do** keep all eight navigation labels visible, including in the compact grid.
+- **Do** distinguish selected keys from staged edits with the established state colors.
+- **Do** preserve the separate native caption strip and visible keyboard focus.
 
 ### Don't:
-- **Don't** assign a key meaning to the knob from its physical position; it opens key testing.
-- **Don't** replace the neutral workbench with decorative dashboard cards or marketing copy.
+- **Don't** imply keyboard mapping from the knob's location; it opens key testing.
+- **Don't** introduce translucent app surfaces that compromise text legibility.
+- **Don't** replace the neutral workbench with decorative marketing panels.

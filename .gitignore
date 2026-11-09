@@ -13,3 +13,7 @@ ui/target/
 work/
 ui/gen/
 target/
+.playwright-cli/
+.test-tools/
+.impeccable/review/
+**/__pycache__/

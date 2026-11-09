@@ -1,6 +1,6 @@
 // 按鍵重設
 const LAYERS=["預設層","FN1 層","FN2 層","Tap 層"];
-const KEY_LABEL={PrtSc:"Prt",SrcLock:"Scr",CapsLock:"Caps",Backspace:"Back",LShift:"Shift",RShift:"Shift",LControl:"Ctrl",RControl:"Ctrl"};
+const KEY_LABEL={LCtrl:"Ctrl",RCtrl:"Ctrl",PrtSc:"Prt",SrcLock:"Scr",CapsLock:"Caps",Backspace:"Back",LShift:"Shift",RShift:"Shift",LControl:"Ctrl",RControl:"Ctrl"};
 const plainKeys=()=>{const seen=new Set();return S.st.actions.filter(a=>/^000000(?!00)[0-9A-F]{2}$/.test(a.h)&&!seen.has(a.h)&&seen.add(a.h))};
 
 function assign(slot,code){
@@ -17,7 +17,7 @@ PAGES.remap=body=>{
   if(!connected()||!S.draft){body.append(card(sub("尚未讀取鍵盤"),muted("請連接 USB 並切至有線模式，再按「重新讀取」。")));return}
   S.afterNames=()=>go("remap");
   const count=changeCount();
-  const layerSel=h("select",{onchange:e=>{S.layer=+e.target.value;go("remap")}},LAYERS.map((n,i)=>h("option",{value:i},n)));layerSel.value=S.layer;
+  const layerSel=h("select",{"aria-label":"按鍵層",onchange:e=>{S.layer=+e.target.value;go("remap")}},LAYERS.map((n,i)=>h("option",{value:i},n)));layerSel.value=S.layer;
   body.append(row(layerSel,btn("復原",()=>{if(!S.undo.length)return;S.redo.push({...S.draft});S.draft=S.undo.pop();saveDraft();go("remap")},{disabled:!S.undo.length}),
     btn("重做",()=>{if(!S.redo.length)return;S.undo.push({...S.draft});S.draft=S.redo.pop();saveDraft();go("remap")},{disabled:!S.redo.length}),
     h("span",{style:{flex:1}}),
@@ -43,11 +43,11 @@ PAGES.remap=body=>{
   const list=h("div",{class:"list"});let chosen=null;
   const search=h("input",{type:"search","aria-label":"搜尋按鍵功能",value:S.actionQuery||"",placeholder:"搜尋功能，例如 F13、側燈、Win Lock",style:{width:"100%"},oninput:()=>{S.actionQuery=search.value;fill()}});
   const fill=()=>{list.replaceChildren(...S.st.actions.filter(a=>a.n.toLowerCase().includes(search.value.toLowerCase())).map(a=>
-    h("div",{class:a.h===cur?"on":"",onclick:()=>{chosen=a;[...list.children].forEach(c=>c.classList.remove("on"));event.currentTarget.classList.add("on");add.disabled=false}},a.n)))};
+    h("div",{class:a.h===cur?"on":"",onclick:e=>{chosen=a;[...list.children].forEach(c=>c.classList.remove("on"));e.currentTarget.classList.add("on");add.disabled=false}},a.n)))};
   const add=btn("加入變更",()=>chosen&&assign(slot,chosen.h),{disabled:true});
   const funcTab=h("div",{style:{display:"flex",flexDirection:"column",gap:"8px"}},search,list,add,muted("「鍵盤內建」功能需套用後按實體鍵觸發。錄製前先選機內背光 1，再按錄製鍵；完成後再按一次儲存。"));fill();
   const mods=[["Ctrl",1],["Shift",2],["Alt",4],["Win",8]].map(([n,v])=>({n,v,box:h("input",{type:"checkbox"})}));
-  const mainKey=h("select",null,h("option",{value:""},"選擇主鍵"),plainKeys().map(a=>h("option",{value:a.h},a.n)));
+  const mainKey=h("select",{"aria-label":"組合鍵主鍵"},h("option",{value:""},"選擇主鍵"),plainKeys().map(a=>h("option",{value:a.h},a.n)));
   const comboTab=h("div",{style:{display:"flex",flexDirection:"column",gap:"12px"}},row(mods.map(m=>h("label",{class:"chk"},m.box,m.n))),mainKey,
     btn("加入組合鍵",()=>{if(!mainKey.value){say("請選擇組合鍵的主鍵。");return}const m=mods.reduce((a,x)=>a|(x.box.checked?x.v:0),0);assign(slot,"00"+m.toString(16).padStart(2,"0").toUpperCase()+"00"+mainKey.value.slice(6))}));
   const panes=[funcTab,comboTab];const tabBtns=["功能","組合鍵"].map((t,i)=>h("button",{class:i?"":"on",onclick:()=>{tabBtns.forEach((b,j)=>b.classList.toggle("on",i===j));panes.forEach((p,j)=>p.style.display=i===j?"":"none")}},t));comboTab.style.display="none";

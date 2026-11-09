@@ -1,0 +1,25 @@
+# C# baseline c75e3a6 app/Api.cs
+GET /keyboard.json
+GET /api/state
+GET /api/ping
+POST /api/lights
+POST /api/color
+POST /api/keymap
+POST /api/macros/save
+POST /api/macros/write
+POST /api/schemes/create
+POST /api/schemes/apply
+POST /api/schemes/delete
+POST /api/schemes/rename
+POST /api/schemes/import
+GET /api/schemes/export
+POST /api/layouts/put
+POST /api/layouts/delete
+GET /api/live
+POST /api/live
+POST /api/decode
+POST /api/backup
+GET /api/backups
+POST /api/backups/settings
+GET /api/profile
+POST /api/restore

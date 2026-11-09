@@ -79,15 +79,15 @@ PAGES.macros=body=>{
 
   if(!m){body.append(card(muted("尚無巨集，請按「新增」建立。")));}
   else{
-    const nameIn=h("input",{type:"text",value:m.Name,maxlength:20,style:{width:"100%"},onchange:e=>{const v=e.target.value.trim();macroEdit(l=>{l[i].Name=v},"已更新名稱。")}});
+    const nameIn=h("input",{type:"text","aria-label":"巨集名稱",value:m.Name,maxlength:20,style:{width:"100%"},onchange:e=>{const v=e.target.value.trim();macroEdit(l=>{l[i].Name=v},"已更新名稱。")}});
     const tbl=h("table",{class:"tbl"},h("tr",null,["#","按鍵","動作","延遲"].map(t=>h("th",null,t))),
       m.Events.map((e,j)=>h("tr",{class:j===evSel?"on":"",style:{cursor:"pointer"},onclick:()=>{evSel=j;go("macros")}},
         h("td",null,j+1),h("td",null,keyLabel(e.Code)),h("td",null,e.Up?"放開":"按下"),h("td",null,e.Delay+" ms"))));
-    const dIn=h("input",{type:"number",min:0,max:60000,value:evSel!=null?m.Events[evSel].Delay:10,style:{width:"100px"}});
-    const keySel=h("select",null,Object.keys(HID_NAMES).map(Number).sort((a,b)=>a-b).map(c=>h("option",{value:c},HID_NAMES[c])));
+    const dIn=h("input",{type:"number","aria-label":"所選事件延遲",min:0,max:60000,value:evSel!=null?m.Events[evSel].Delay:10,style:{width:"100px"}});
+    const keySel=h("select",{"aria-label":"新增事件按鍵"},Object.keys(HID_NAMES).map(Number).sort((a,b)=>a-b).map(c=>h("option",{value:c},HID_NAMES[c])));
     keySel.value="44";
-    const modeSel=h("select",null,[["click","點擊（按下後放開）"],["down","按下"],["up","放開"]].map(([v,t])=>h("option",{value:v},t)));
-    const addIn=h("input",{type:"number",min:0,max:60000,value:10,style:{width:"100px"}});
+    const modeSel=h("select",{"aria-label":"新增事件動作"},[["click","點擊（按下後放開）"],["down","按下"],["up","放開"]].map(([v,t])=>h("option",{value:v},t)));
+    const addIn=h("input",{type:"number","aria-label":"新增事件延遲",min:0,max:60000,value:10,style:{width:"100px"}});
 
     let recBox=null;
     const recCtl=macroRec
@@ -95,7 +95,7 @@ PAGES.macros=body=>{
       :row(btn("開始錄製",()=>{macroRec={ev:[],t:0};evSel=null;go("macros")}));
     if(macroRec){
       const cnt=h("div",{class:"muted"},`已錄 ${macroRec.ev.length} 個事件（上限 60）`);
-      recBox=h("div",{tabindex:0,style:{border:"2px dashed currentColor",borderRadius:"8px",padding:"20px",textAlign:"center",outline:"none"},
+      recBox=h("div",{tabindex:0,"aria-label":"巨集錄製區",style:{border:"2px dashed currentColor",borderRadius:"8px",padding:"20px",textAlign:"center"},
         onkeydown:e=>{e.preventDefault();if(e.repeat)return;const c=CODE_TO_HID[e.code];if(c!=null)macroRecAdd(c,false,cnt)},
         onkeyup:e=>{e.preventDefault();const c=CODE_TO_HID[e.code];if(c!=null)macroRecAdd(c,true,cnt)}},
         h("div",null,"錄製中：按下鍵盤按鍵…"),cnt);

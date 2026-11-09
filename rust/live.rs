@@ -45,6 +45,13 @@ impl Default for Config {
     }
 }
 impl Config {
+    pub fn stamp(store: &Store) -> Result<Option<std::time::SystemTime>> {
+        match std::fs::metadata(store.root.join("live.ini")) {
+            Ok(m) => Ok(Some(m.modified()?)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
     pub fn load(store: &Store) -> Result<Self> {
         let mut c = Self::default();
         for line in store
@@ -162,8 +169,18 @@ pub fn spawn(app: Arc<Mutex<App>>, stop: Arc<AtomicBool>) -> thread::JoinHandle<
         let mut sent = Vec::new();
         let mut revision = 0;
         let mut last = Instant::now() - Duration::from_secs(2);
+        let mut config_check = Instant::now() - Duration::from_secs(1);
         while !stop.load(Ordering::Relaxed) {
             let mut a = app.lock().unwrap();
+            if config_check.elapsed() >= Duration::from_millis(500) {
+                config_check = Instant::now();
+                if let Err(e) = a.reload_config() {
+                    a.status = format!("錯誤：設定檔無法載入：{e:#}");
+                    drop(a);
+                    thread::sleep(Duration::from_millis(500));
+                    continue;
+                }
+            }
             if revision != a.revision {
                 revision = a.revision;
                 sent.clear();
@@ -198,20 +215,33 @@ pub fn spawn(app: Arc<Mutex<App>>, stop: Arc<AtomicBool>) -> thread::JoinHandle<
                     a.active = true;
                 }
                 let frame = if c.mode == "music" {
-                    #[cfg(windows)]
-                    {
-                        if audio.is_none() {
-                            audio = Some(crate::audio::Audio::new()?);
+                    if a.service.demo {
+                        // Demo is a complete device/audio isolation boundary.
+                        for (i, level) in levels.iter_mut().enumerate() {
+                            *level = (start.elapsed().as_secs_f64() * 1.8 + i as f64 * 0.6)
+                                .sin()
+                                .abs()
+                                * 0.6;
                         }
-                        let raw =
-                            lighting::spectrum(&audio.as_mut().unwrap().samples()?, 48000., c.gain);
-                        for i in 0..BANDS {
-                            levels[i] = raw[i].max(levels[i] * 0.82);
+                    } else {
+                        #[cfg(windows)]
+                        {
+                            if audio.is_none() {
+                                audio = Some(crate::audio::Audio::new()?);
+                            }
+                            let raw = lighting::spectrum(
+                                &audio.as_mut().unwrap().samples()?,
+                                48000.,
+                                c.gain,
+                            );
+                            for i in 0..BANDS {
+                                levels[i] = raw[i].max(levels[i] * 0.82);
+                            }
                         }
-                    }
-                    #[cfg(not(windows))]
-                    {
-                        anyhow::bail!("音樂律動需要 Windows WASAPI。");
+                        #[cfg(not(windows))]
+                        {
+                            anyhow::bail!("音樂律動需要 Windows WASAPI。");
+                        }
                     }
                     viz.render(
                         c.style,

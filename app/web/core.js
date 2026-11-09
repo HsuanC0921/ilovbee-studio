@@ -23,6 +23,10 @@ function h(tag,props,...kids){
     else if(v!==false&&v!=null)e.setAttribute(k,v);
   }
   for(const c of kids.flat(Infinity))if(c!==false&&c!=null)e.append(c.nodeType?c:document.createTextNode(String(c)));
+  if(tag==='div'&&props?.onclick){
+    e.setAttribute('role','button');e.tabIndex=0;
+    e.addEventListener('keydown',event=>{if(event.target===e&&['Enter',' '].includes(event.key)){event.preventDefault();e.click()}});
+  }
   return e;
 }
 const card=(...k)=>h("div",{class:"card"},...k);
@@ -92,27 +96,32 @@ function updateHeader(){
   const dev=document.getElementById("dev"),pw=document.getElementById("pw");if(!dev)return;
   dev.textContent=S.st?.demo?"B87 · 離線示範（不會寫入鍵盤）":S.st?.connected?"B87 · USB 已連線":"B87 · USB 未連線";
   pw.textContent=S.st?.battery!=null?`電量 ${S.st.battery}% · Windows 最近回報${S.st.batteryReportedAt?" "+new Date(S.st.batteryReportedAt).toLocaleString("zh-TW"):"（時間不明）"}`:"電量尚未取得";
+  document.getElementById('app-version').textContent='iLovbee Studio'+(S.st?.version?' · '+S.st.version:'');
 }
 // 在 Tauri 視窗（無系統標題列）中，拖曳區與視窗控制鍵覆蓋在版面最上方；一般瀏覽器不出現
 function titlebar(){
   const w=window.__TAURI__?.window?.getCurrentWindow?.();if(!w)return null;
   document.documentElement.classList.add("tauri");
-  const c=(label,glyph,fn,cls)=>h("button",{class:cls,tabindex:-1,"aria-label":label,title:label,onclick:fn},glyph);
+  const c=(label,path,fn,cls)=>{const b=h("button",{class:cls,"aria-label":label,title:label,onclick:fn});
+    const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.innerHTML=path;b.append(s);return b};
   return h("div",{id:"titlebar","data-tauri-drag-region":""},
-    h("div",{class:"wc"},c("最小化","",()=>w.minimize()),c("最大化","",()=>w.toggleMaximize()),c("關閉","",()=>w.close(),"x")));
+    h("span",{class:"window-name"},"iLovbee Studio"),h("div",{class:"wc"},c("最小化",'<path d="M5 12h14"/>',()=>w.minimize()),c("最大化",'<rect x="5" y="5" width="14" height="14"/>',()=>w.toggleMaximize()),c("關閉",'<path d="m6 6 12 12M18 6 6 18"/>',()=>w.close(),"x")));
 }
 function shell(){
   const app=document.getElementById("app");const tb=titlebar();if(tb&&!document.getElementById("titlebar"))app.before(tb);app.replaceChildren(
-    h("aside",{"data-tauri-drag-region":""},h("div",{class:"brand"},h("b",null,"B87"),h("span",null,"鍵盤設定")),
-      h("nav",null,NAV.map(([id,name])=>h("button",{id:"nav-"+id,onclick:()=>go(id),title:name},icon(id),h("span",null,name))))),
+    h("aside",null,h("div",{class:"brand"},h("b",null,"B87"),h("span",{id:"app-version"},"iLovbee Studio · 鍵盤設定")),
+      h("nav",{"aria-label":"主要功能"},NAV.map(([id,name])=>h("button",{id:"nav-"+id,onclick:()=>go(id),title:name},icon(id),h("span",null,name)))),
+      h("div",{class:"theme-control"},h("label",{for:"theme-choice"},"介面主題"),
+        h("select",{id:"theme-choice","aria-label":"介面主題",value:Theme.get(),onchange:e=>Theme.set(e.target.value)},
+          [['system','跟隨 Windows'],['light','淺色'],['dark','深色']].map(([v,n])=>h('option',{value:v,selected:Theme.get()===v},n))))),
     h("main",null,
       h("header",{"data-tauri-drag-region":""},h("div",null,h("b",{id:"dev"},"B87 · 讀取中"),h("small",{id:"pw"},"")),btn("重新讀取",()=>refresh())),
-      h("div",{id:"body"}),h("footer",{id:"msg"},"就緒")));
+      h("div",{id:"body"}),h("footer",{id:"msg",role:"status","aria-live":"polite"},"就緒")));
 }
 const PAGES={};
 function go(id){
   clearTimers();S.afterNames=null;S.page=id;
-  for(const [n] of NAV)document.getElementById("nav-"+n).classList.toggle("on",n===id);
+  for(const [n] of NAV){const b=document.getElementById("nav-"+n);b.classList.toggle("on",n===id);if(n===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}
   const body=document.getElementById("body");body.replaceChildren();PAGES[id](body);
 }
 async function refresh(){

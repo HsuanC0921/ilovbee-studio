@@ -4,6 +4,10 @@ A Windows settings tool for the BY Tech B87 keyboard. Version 0.8.0 replaces the
 
 [繁體中文與完整操作說明](README.zh-TW.md) · [Manual feature coverage](docs/manual-functions.md) · [Migration and validation](docs/rust-migration.md)
 
+Version 0.9.0 restores external configuration synchronization and replaces the transparent shell with readable, opaque light/dark themes. Theme selection follows Windows or a saved manual preference. Text navigation remains visible in narrow windows. Demo mode isolates both USB and audio.
+
+[C# feature parity](docs/csharp-parity.md) · [Release gates and test scope](docs/release-validation.md). Release staging requires unit/integration, browser, security, stress and dependency-advisory checks to pass.
+
 The existing Traditional Chinese HTML/CSS/JavaScript UI is served by Rust, displayed in an optional Rust/Tauri shell or an Edge app window. UI rendering and interaction still use web technologies.
 
 ## Build
