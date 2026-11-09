@@ -60,7 +60,7 @@ try {
         }
     }
     Copy-Item -LiteralPath docs -Destination dist -Recurse -Force
-    Copy-Item -LiteralPath 'README.zh-TW.md' -Destination dist -Force
+    Copy-Item -LiteralPath 'README.md','README.zh-TW.md' -Destination dist -Force
     Copy-Item -LiteralPath LICENSE -Destination dist -Force
     if ($ReleaseChecks) {
         New-Item -ItemType Directory -Path 'dist/validation' -Force | Out-Null
