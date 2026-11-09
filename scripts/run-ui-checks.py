@@ -113,7 +113,8 @@ def main():
                     host.kill()
                     host.wait()
             pathlib.Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf8")
-            print(json.dumps(report, ensure_ascii=False))
+            # Keep console JSON readable by Windows runners with non-UTF-8 stdout.
+            print(json.dumps(report))
     return report["status"] != "pass"
 
 
