@@ -169,6 +169,15 @@ impl App {
                 self.service.set_lights(&expected, &after)?;
                 Ok(ok())
             }
+            ("POST", "/api/keyboard") => {
+                let d = doc()?;
+                let expected = bytes(string(&d, "expected")?, LIGHT_BYTES)?;
+                let settings: KeyboardSettings = serde_json::from_value(d["settings"].clone())?;
+                let after = settings.patch(&expected)?;
+                self.stop_live()?;
+                self.service.set_lights(&expected, &after)?;
+                Ok(ok())
+            }
             ("POST", "/api/color") => {
                 let d = doc()?;
                 self.service

@@ -43,6 +43,15 @@ async function run(label,fn){
   S.busy=true;say(label);
   try{await fn()}catch(e){say(e.message,true)}finally{S.busy=false}
 }
+async function patchKeyboard(settings){
+  let applied=false;
+  await run("正在套用鍵盤設定……",async()=>{
+    if(S.st.live.mode!=="off"){await api("/api/live",{mode:"off"});await load()}
+    await api("/api/keyboard",{expected:S.st.lights,settings});
+    await load();go(S.page);applied=true;say("鍵盤設定已套用並完成讀回核對。");
+  });
+  if(!applied&&S.st)go(S.page);
+}
 const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
 const unhex=s=>Uint8Array.from(s.match(/../g)||[],x=>parseInt(x,16));
 const slotHex=(layerHex,slot)=>layerHex.substr(slot*8,8);

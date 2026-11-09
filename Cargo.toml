@@ -1,6 +1,6 @@
 [package]
 name = "ilovbee-studio"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 license = "MIT"
 description = "Native Rust settings host for the BY Tech B87 keyboard"

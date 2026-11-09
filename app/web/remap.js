@@ -13,7 +13,7 @@ function assign(slot,code){
 const isDirty=(layer,slot)=>slotHex(S.base[layer],slot)!==slotHex(S.draft[layer],slot);
 
 PAGES.remap=body=>{
-  title(body,"按鍵重設","自訂按鍵、媒體控制與組合快捷鍵。");
+  title(body,"按鍵重設","自訂按鍵、媒體控制與鍵盤內建功能。");
   if(!connected()||!S.draft){body.append(card(sub("尚未讀取鍵盤"),muted("請連接 USB 並切至有線模式，再按「重新讀取」。")));return}
   S.afterNames=()=>go("remap");
   const count=changeCount();
@@ -41,11 +41,11 @@ PAGES.remap=body=>{
     btn("取消此鍵變更",()=>assign(slot,old),{disabled:cur===old}));
   const protectedKey=slot===59;
   const list=h("div",{class:"list"});let chosen=null;
-  const search=h("input",{type:"text",placeholder:"搜尋功能，例如 F13、截圖、靜音",style:{width:"100%"},oninput:()=>fill()});
+  const search=h("input",{type:"search","aria-label":"搜尋按鍵功能",value:S.actionQuery||"",placeholder:"搜尋功能，例如 F13、側燈、Win Lock",style:{width:"100%"},oninput:()=>{S.actionQuery=search.value;fill()}});
   const fill=()=>{list.replaceChildren(...S.st.actions.filter(a=>a.n.toLowerCase().includes(search.value.toLowerCase())).map(a=>
     h("div",{class:a.h===cur?"on":"",onclick:()=>{chosen=a;[...list.children].forEach(c=>c.classList.remove("on"));event.currentTarget.classList.add("on");add.disabled=false}},a.n)))};
   const add=btn("加入變更",()=>chosen&&assign(slot,chosen.h),{disabled:true});
-  const funcTab=h("div",{style:{display:"flex",flexDirection:"column",gap:"8px"}},search,list,add);fill();
+  const funcTab=h("div",{style:{display:"flex",flexDirection:"column",gap:"8px"}},search,list,add,muted("「鍵盤內建」功能需套用後按實體鍵觸發。錄製前先選機內背光 1，再按錄製鍵；完成後再按一次儲存。"));fill();
   const mods=[["Ctrl",1],["Shift",2],["Alt",4],["Win",8]].map(([n,v])=>({n,v,box:h("input",{type:"checkbox"})}));
   const mainKey=h("select",null,h("option",{value:""},"選擇主鍵"),plainKeys().map(a=>h("option",{value:a.h},a.n)));
   const comboTab=h("div",{style:{display:"flex",flexDirection:"column",gap:"12px"}},row(mods.map(m=>h("label",{class:"chk"},m.box,m.n))),mainKey,

@@ -12,6 +12,17 @@ PAGES.status=body=>{
       bat==null?muted("請連接藍牙以讀取電量。"):h("progress",{max:100,value:bat}),
       row(btn("更新電量",()=>run("正在更新電量……",async()=>{await load();go("status")})),
         h("a",{class:"btn",href:"ms-settings:bluetooth"},"開啟 Windows 藍牙設定"))));
+  const L=connected()?unhex(S.st.lights):null;
+  const mode=L&&L[0]===0?"windows":L&&L[0]===1?"mac":"";
+  const modeIn=h("select",{"aria-label":"鍵盤系統模式",disabled:!L},h("option",{value:""},"尚未確認"),
+    h("option",{value:"windows"},"Windows"),h("option",{value:"mac"},"Mac"));modeIn.value=mode;
+  const modeApply=btn("套用系統模式",()=>patchKeyboard({systemMode:modeIn.value}),{disabled:true});
+  modeIn.onchange=()=>{modeApply.disabled=!L||!modeIn.value||modeIn.value===mode};
+  const lock=h("input",{type:"checkbox",checked:!!L&&L[15]===1,disabled:!L||L[15]>1,
+    onchange:()=>patchKeyboard({winLock:lock.checked})});
+  body.append(card(sub("鍵盤系統設定"),row(h("label",null,"系統模式"),modeIn,modeApply),
+    h("label",{class:"chk"},lock,"Win Lock（鎖定 Win 鍵）"),
+    muted("顯示上次讀取的鍵盤狀態。使用 Fn＋A／S 或 Fn＋Win 後，請按「重新讀取」。")));
 };
 
 PAGES.test=body=>{

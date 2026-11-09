@@ -5,6 +5,42 @@ use std::collections::BTreeMap;
 
 pub type Maps = BTreeMap<u8, String>;
 
+/// Fields identified by physical Fn shortcuts on USB 258A:0199 release 2010.
+/// Preserves unspecified configuration bytes; does not access the onboard recording buffer.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct KeyboardSettings {
+    pub system_mode: Option<SystemMode>,
+    pub win_lock: Option<bool>,
+    pub side_color: Option<u8>,
+}
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SystemMode {
+    Windows,
+    Mac,
+}
+impl KeyboardSettings {
+    pub fn patch(&self, expected: &[u8]) -> Result<Vec<u8>> {
+        ensure!(expected.len() == LIGHT_BYTES, "無效的鍵盤設定。");
+        let mut after = expected.to_vec();
+        if let Some(mode) = &self.system_mode {
+            after[0] = match mode {
+                SystemMode::Windows => 0,
+                SystemMode::Mac => 1,
+            };
+        }
+        if let Some(locked) = self.win_lock {
+            after[15] = u8::from(locked);
+        }
+        if let Some(color) = self.side_color {
+            ensure!(color <= 10, "側燈色彩必須在 1–11 之間。");
+            after[18] = color;
+        }
+        Ok(after)
+    }
+}
+
 pub fn bytes(hex: &str, count: usize) -> Result<Vec<u8>> {
     ensure!(hex.len() == count * 2, "資料長度不正確。");
     Ok(hex::decode(hex)?)

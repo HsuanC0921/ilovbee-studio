@@ -116,6 +116,96 @@ fn decode_chords_media_and_macro_references() {
         .any(|(n, b)| n == "音量提高" && b == &[2, 0, 0, 0xe9]));
 }
 #[test]
+fn captured_fn_functions_can_be_assigned_without_changing_other_keys() {
+    // Physical Fn1-layer captures, 2026-11-09. Values are device actions,
+    // not USB commands; this tests assignment/readback, not physical actuation.
+    let captures = [
+        ("側燈切色（鍵盤內建）", "08000001"),
+        ("機內背光錄製／儲存（鍵盤內建）", "08070000"),
+        ("機內背光 1（可錄製）", "08092000"),
+        ("機內背光 2（固定）", "08092100"),
+        ("機內背光 3（固定）", "08092200"),
+        ("Win Lock 切換（鍵盤內建）", "07000001"),
+        ("切換 Windows 模式（鍵盤內建）", "0700000E"),
+        ("切換 Mac 模式（鍵盤內建）", "0700000F"),
+    ];
+    let (_dir, s) = store();
+    let mut service = Service::new(s, true);
+    for (name, captured) in captures {
+        let code = bytes(captured, 4).unwrap();
+        assert_eq!(actions::decode(&code, &[]), name);
+        assert!(actions::all(&[])
+            .iter()
+            .any(|(n, c)| n == name && c == code.as_slice()));
+        let before = service.capture().unwrap();
+        let mut desired = before.keymaps.clone();
+        let mut map = bytes(&desired[&0], MAP_BYTES).unwrap();
+        map[78 * 4..79 * 4].copy_from_slice(&code);
+        desired.insert(0, hex::encode_upper(map));
+        service.apply_maps(&before.keymaps, &desired, &[]).unwrap();
+        let after = service.capture().unwrap();
+        assert_eq!(after.keymaps, desired);
+        assert_eq!(after.lighting, before.lighting);
+    }
+}
+#[test]
+fn keyboard_settings_preserve_unrelated_bytes_and_reject_stale_snapshots() {
+    let (_dir, s) = store();
+    let mut app = App::new(s, true).unwrap();
+    let before = app.service.capture().unwrap();
+    // Unknown/reserved fields and the selected onboard pattern must survive.
+    let mut initial = bytes(&before.lighting, LIGHT_BYTES).unwrap();
+    initial[3] = 3;
+    initial[9] = 1;
+    initial[11] = 0x20;
+    initial[25] = 0x91;
+    app.service
+        .set_lights(&bytes(&before.lighting, LIGHT_BYTES).unwrap(), &initial)
+        .unwrap();
+    let expected = hex::encode_upper(&initial);
+    let request =
+        json!({"expected":expected,"settings":{"systemMode":"mac","winLock":true,"sideColor":10}});
+    app.route("POST", "/api/keyboard", "", request.to_string().as_bytes())
+        .unwrap();
+    let changed = app.service.capture().unwrap();
+    let mut desired = initial.clone();
+    desired[0] = 1;
+    desired[15] = 1;
+    desired[18] = 10;
+    assert_eq!(changed.lighting, hex::encode_upper(&desired));
+    assert_eq!(changed.keymaps, before.keymaps);
+    assert!(app
+        .route("POST", "/api/keyboard", "", request.to_string().as_bytes())
+        .unwrap_err()
+        .to_string()
+        .contains("已變更"));
+    assert_eq!(app.service.capture().unwrap().lighting, changed.lighting);
+    let back = json!({"expected":changed.lighting,"settings":{"systemMode":"windows","winLock":false,"sideColor":0}});
+    app.route("POST", "/api/keyboard", "", back.to_string().as_bytes())
+        .unwrap();
+    assert_eq!(app.service.capture().unwrap().lighting, expected);
+}
+#[test]
+fn invalid_keyboard_settings_do_not_write_or_create_backups() {
+    let (_dir, s) = store();
+    let mut app = App::new(s, true).unwrap();
+    let before = app.service.capture().unwrap();
+    for settings in [
+        json!({"sideColor":11}),
+        json!({"sideColor":-1}),
+        json!({"systemMode":"linux"}),
+        json!({"winLock":1}),
+        json!({"recording":true}),
+    ] {
+        let request = json!({"expected":before.lighting,"settings":settings});
+        assert!(app
+            .route("POST", "/api/keyboard", "", request.to_string().as_bytes())
+            .is_err());
+    }
+    assert_eq!(app.service.capture().unwrap().lighting, before.lighting);
+    assert!(app.service.store.backups().unwrap().is_empty());
+}
+#[test]
 fn legacy_profile_and_four_layers_round_trip() {
     let (_dir, s) = store();
     let mut service = Service::new(s, true);

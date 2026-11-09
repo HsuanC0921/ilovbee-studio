@@ -124,7 +124,13 @@ PAGES.lighting=body=>{
     row(h("label",{class:"chk"},tapOn,"啟用 Tap"),h("label",null,"Tap 時間（預設 20）"),tapNum),setApply));
   // 側邊指示燈：payload[26]（0＝亮、1＝滅）。與 Fn+Backspace 切換的是同一個欄位，勾選即套用
   const sideOn=h("input",{type:"checkbox",checked:!!L&&L[26]===0,disabled:!L,onclick:()=>{const want=sideOn.checked;patchLights(want?"正在開啟側燈……":"正在關閉側燈……",a=>{a[26]=want?0:1},want?"側邊指示燈已開啟。":"側邊指示燈已關閉。")}});
-  body.append(card(sub("側邊指示燈"),h("label",{class:"chk"},sideOn,"顯示鍵盤兩側的指示燈"),muted("側燈顏色尚未找到可設定的指令。")));
+  const sideColor=h("select",{"aria-label":"側燈色彩",disabled:!L},
+    h("option",{value:""},"選擇側燈色彩"),Array.from({length:11},(_,i)=>h("option",{value:i},`色彩 ${i+1}`)));
+  sideColor.value=L&&L[18]<=10?String(L[18]):"";
+  const sideApply=btn("套用側燈色彩",()=>patchKeyboard({sideColor:+sideColor.value}),{disabled:true});
+  sideColor.onchange=()=>{sideApply.disabled=!L||sideColor.value===""||+sideColor.value===L[18]};
+  body.append(card(sub("側邊指示燈"),h("label",{class:"chk"},sideOn,"顯示鍵盤兩側的指示燈"),
+    row(h("label",null,"側燈色彩"),sideColor,sideApply),muted("依鍵盤 Fn＋Insert 的切換順序編號；選色不會改變主背光。")));
   body.append(card(sub("鍵盤快捷鍵"),row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Scroll Lock"),muted("切換主背光效果")),
     row(h("span",{class:"chip"},"Fn"),"＋",h("span",{class:"chip"},"Backspace"),muted("切換整體 RGB 燈光（含側燈）"))));
 };

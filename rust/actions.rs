@@ -19,6 +19,20 @@ pub fn all(macros: &[Macro]) -> Vec<(String, [u8; 4])> {
         ("音量提高".into(), [2, 0, 0, 0xe9]),
         ("停止播放".into(), [2, 0, 0, 0xb7]),
     ];
+    // Captured from this B87's Fn layer, not generic HID usages. Assigning one
+    // changes a physical key; it does not invoke the function over USB.
+    for (name, value) in [
+        ("側燈切色（鍵盤內建）", [8, 0, 0, 1]),
+        ("機內背光錄製／儲存（鍵盤內建）", [8, 7, 0, 0]),
+        ("機內背光 1（可錄製）", [8, 9, 0x20, 0]),
+        ("機內背光 2（固定）", [8, 9, 0x21, 0]),
+        ("機內背光 3（固定）", [8, 9, 0x22, 0]),
+        ("Win Lock 切換（鍵盤內建）", [7, 0, 0, 1]),
+        ("切換 Windows 模式（鍵盤內建）", [7, 0, 0, 0x0e]),
+        ("切換 Mac 模式（鍵盤內建）", [7, 0, 0, 0x0f]),
+    ] {
+        a.push((name.into(), value));
+    }
     for (name, key, modifier) in [
         ("複製（Ctrl＋C）", 6, 1),
         ("貼上（Ctrl＋V）", 0x19, 1),
